@@ -170,15 +170,10 @@ def complete_delivery():
     if data.get('delivery_photo'):
         pkg['delivery_photo'] = data['delivery_photo']
 
-    reward           = pkg['reward']
-    traveller_earned = round(reward * 0.80, 2)
-    platform_fee     = round(reward * 0.20, 2)
-
+    reward = pkg['reward']
     return jsonify({
-        'message':          'Delivery completed! 🎉',
+        'message':          'Delivery confirmed! Waiting for Sender to complete the payment. 💸',
         'reward':           reward,
-        'traveller_earned': traveller_earned,
-        'platform_fee':     platform_fee,
     })
 
 
@@ -205,6 +200,77 @@ def receiver_packages():
                 'delivery_photo':   p.get('delivery_photo', ''),
             })
     return jsonify(result)
+
+
+# ── Sender: lookup packages by phone ───────────────────────────────────────────
+@app.route('/sender-packages', methods=['GET'])
+def sender_packages():
+    phone = request.args.get('phone', '').strip()
+    if not phone:
+        return jsonify({'error': 'phone query param required'}), 400
+
+    result = []
+    for p in packages.values():
+        if p.get('phone') == phone:
+            result.append({
+                'id':               p['id'],
+                'receiver_name':    p['receiver_name'],
+                'receiver_address': p['receiver_address'],
+                'description':      p['description'],
+                'reward':           p['reward'],
+                'status':           p['status'],
+                'accepted_by':      p.get('accepted_by', ''),
+                'package_photo':    p.get('package_photo', ''),
+                'pickup_photo':     p.get('pickup_photo', ''),
+                'delivery_photo':   p.get('delivery_photo', ''),
+            })
+    return jsonify(result)
+
+# ── Pay for Package ────────────────────────────────────────────────────────────
+@app.route('/pay-package', methods=['POST'])
+def pay_package():
+    data = request.get_json()
+    pkg_id = data.get('package_id', '').upper()
+    
+    if pkg_id not in packages:
+        return jsonify({'error': 'Package not found'}), 404
+        
+    pkg = packages[pkg_id]
+    if pkg['status'] == 'paid':
+        return jsonify({'error': 'Already paid'}), 400
+    if pkg['status'] != 'delivered':
+        return jsonify({'error': 'Package is not delivered yet'}), 400
+        
+    pkg['status'] = 'paid'
+    reward = pkg['reward']
+    traveller_earned = round(reward * 0.80, 2)
+    platform_fee = round(reward * 0.20, 2)
+    
+    return jsonify({
+        'message': 'Payment successful! 🎉',
+        'traveller_earned': traveller_earned,
+        'platform_fee': platform_fee
+    })
+
+
+# ── Single package (for tracking by ID) ────────────────────────────────────────
+@app.route('/package/<pkg_id>', methods=['GET'])
+def get_package(pkg_id):
+    pkg = packages.get(pkg_id.upper())
+    if not pkg:
+        return jsonify({'error': 'Not found'}), 404
+    return jsonify({
+        'id':               pkg['id'],
+        'sender_address':   pkg['sender_address'],
+        'receiver_address': pkg['receiver_address'],
+        'description':      pkg['description'],
+        'reward':           pkg['reward'],
+        'status':           pkg['status'],
+        'accepted_by':      pkg.get('accepted_by', ''),
+        'package_photo':    pkg.get('package_photo', ''),
+        'pickup_photo':     pkg.get('pickup_photo', ''),
+        'delivery_photo':   pkg.get('delivery_photo', ''),
+    })
 
 
 # ── All packages (debug) ───────────────────────────────────────────────────────
