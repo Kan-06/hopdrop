@@ -3,9 +3,87 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HopDrop | Sender Details</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>HopDrop | Send a Package</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* ── Autocomplete ─────────────────────────────────────────────── */
+        .ac-wrap { position: relative; }
+        .sug-box {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: #1a2640; border: 1px solid rgba(6,182,212,.35);
+            border-radius: 12px; max-height: 210px; overflow-y: auto;
+            z-index: 999; box-shadow: 0 12px 30px rgba(0,0,0,.5);
+            animation: fadeDown .15s ease;
+        }
+        .sug-box.hidden { display: none; }
+        @keyframes fadeDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        .sug-item {
+            padding: .7rem 1rem; cursor: pointer; font-size: .88rem;
+            border-bottom: 1px solid rgba(255,255,255,.05);
+            display: flex; align-items: center; gap: .5rem;
+            transition: background .15s;
+        }
+        .sug-item:last-child { border-bottom: none; }
+        .sug-item:hover:not(.sug-disabled) { background: rgba(6,182,212,.15); }
+        .sug-disabled { color: var(--text-muted); cursor: default; font-style: italic; }
+        .sug-icon { font-size: .9rem; flex-shrink: 0; }
+        .addr-badge {
+            display: inline-block; font-size: .72rem; font-weight: 600;
+            padding: .2rem .55rem; border-radius: 99px; margin-left: .5rem;
+            background: rgba(255,255,255,.08); color: var(--text-muted);
+            vertical-align: middle; transition: all .2s;
+        }
+        .addr-badge.valid { background: rgba(34,197,94,.18); color: var(--success); }
+
+        /* ── Photo capture ────────────────────────────────────────────── */
+        .photo-block {
+            background: rgba(255,255,255,.04); border: 1.5px dashed rgba(255,255,255,.15);
+            border-radius: 14px; padding: 1.25rem; text-align: center;
+        }
+        .photo-btn {
+            background: transparent; border: 1px solid var(--secondary);
+            color: var(--secondary); padding: .55rem 1.2rem; border-radius: 10px;
+            cursor: pointer; font-size: .9rem; font-weight: 600; transition: all .2s;
+            display: inline-flex; align-items: center; gap: .4rem;
+        }
+        .photo-btn:hover { background: rgba(6,182,212,.15); }
+        .photo-preview {
+            width: 100%; max-height: 220px; object-fit: cover;
+            border-radius: 10px; margin-top: 1rem; display: none;
+            border: 1px solid var(--glass-border);
+        }
+        .photo-label { font-size: .82rem; color: var(--text-muted); margin-top: .5rem; }
+
+        /* ── Section divider ─────────────────────────────────────────── */
+        .section-title {
+            font-size: .78rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--secondary); margin: 1.75rem 0 1rem;
+            display: flex; align-items: center; gap: .6rem;
+        }
+        .section-title::after {
+            content: ''; flex: 1; height: 1px;
+            background: rgba(6,182,212,.25);
+        }
+
+        /* ── Success card ────────────────────────────────────────────── */
+        .success-card {
+            background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.3);
+            border-radius: 16px; padding: 2rem; text-align: center;
+        }
+        .pkg-id-display {
+            font-size: 2rem; font-weight: 800; letter-spacing: 4px;
+            color: var(--success); margin: 1rem 0;
+            font-family: 'Courier New', monospace;
+        }
+        .copy-btn {
+            background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.4);
+            color: var(--success); padding: .45rem 1rem; border-radius: 8px;
+            cursor: pointer; font-size: .85rem; font-weight: 600;
+            transition: all .2s;
+        }
+        .copy-btn:hover { background: rgba(34,197,94,.25); }
+    </style>
 </head>
 <body>
     <div class="animated-bg">
@@ -13,68 +91,218 @@
         <div class="orb orb-blue"></div>
         <div class="orb orb-yellow"></div>
     </div>
-    
-    <div class="container glass-panel form-layout">
+
+    <div class="container glass-panel form-layout" style="max-width:680px;">
         <nav class="top-nav">
-            <a href="dashboard.html" class="back-link">← Back to roles</a>
+            <a href="index.html" class="back-link">← Back</a>
             <h1 class="logo">Hop<span>Drop</span></h1>
         </nav>
 
-        <div class="form-header">
-            <h2>Package Details</h2>
-            <p>Fill out the information below to initiate a drop.</p>
+        <!-- ── Form ─────────────────────────────────────────────────── -->
+        <div id="form-section">
+            <div class="form-header">
+                <h2>Send a Package</h2>
+                <p>Fill in your details — a traveller going your way will carry it.</p>
+            </div>
+
+            <form id="sender-form" novalidate>
+
+                <!-- Sender info -->
+                <div class="section-title">Your Details</div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="sender_name">Your Name</label>
+                        <input type="text" id="sender_name" placeholder="e.g. Rahul Shetty" required>
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="phone">Your Phone</label>
+                        <input type="tel" id="phone" placeholder="9876543210" maxlength="10" required>
+                    </div>
+                </div>
+
+                <!-- Sender address -->
+                <div class="form-group ac-wrap">
+                    <label for="sender_address">
+                        Pickup Address
+                        <span class="addr-badge" id="sender_address-badge">Type to search</span>
+                    </label>
+                    <input type="text" id="sender_address" placeholder="Start typing — e.g. Karkala Bus Stand…" autocomplete="off" required>
+                    <div id="sender_address-sug" class="sug-box hidden"></div>
+                </div>
+
+                <!-- Receiver info -->
+                <div class="section-title">Receiver Details</div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="receiver_name">Receiver Name</label>
+                        <input type="text" id="receiver_name" placeholder="e.g. Priya D'Souza">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="receiver_phone">Receiver Phone <span style="color:var(--text-muted);font-size:.8rem;">(for tracking)</span></label>
+                        <input type="tel" id="receiver_phone" placeholder="9123456789" maxlength="10">
+                    </div>
+                </div>
+
+                <!-- Receiver address -->
+                <div class="form-group ac-wrap">
+                    <label for="receiver_address">
+                        Delivery Address
+                        <span class="addr-badge" id="receiver_address-badge">Type to search</span>
+                    </label>
+                    <input type="text" id="receiver_address" placeholder="Start typing — e.g. Mangalore City Centre…" autocomplete="off" required>
+                    <div id="receiver_address-sug" class="sug-box hidden"></div>
+                </div>
+
+                <!-- Package details -->
+                <div class="section-title">Package Details</div>
+                <div class="form-row">
+                    <div class="form-group flex-1">
+                        <label for="description">Item Description</label>
+                        <input type="text" id="description" placeholder="e.g. Documents, medicines…">
+                    </div>
+                    <div class="form-group flex-1">
+                        <label for="reward">Reward for Traveller (₹)</label>
+                        <input type="number" id="reward" placeholder="e.g. 50" min="1" step="1" required>
+                    </div>
+                </div>
+
+                <!-- Package photo -->
+                <div class="form-group">
+                    <label>Package Photo <span style="color:var(--text-muted);font-size:.8rem;">(optional — for safety verification)</span></label>
+                    <div class="photo-block">
+                        <button type="button" class="photo-btn" id="pkg-photo-btn">
+                            📷 Take / Upload Photo
+                        </button>
+                        <input type="file" id="pkg-photo-input" accept="image/*" capture="environment" hidden>
+                        <img id="pkg-photo-preview" class="photo-preview" alt="Package photo">
+                        <p class="photo-label">Photo helps the traveller identify your package and proves its condition.</p>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="submit" class="primary-btn" id="submit-btn">🚀 Create Package</button>
+                </div>
+
+                <div id="form-msg" class="form-message hidden"></div>
+            </form>
         </div>
 
-        <form id="sender-form" class="sender-form">
-            <div class="form-group autocomplete-wrapper">
-                <label for="pickup-addr">Sender's Address</label>
-                <div class="input-with-icon">
-                    <input type="text" id="pickup-addr" placeholder="Start typing address..." autocomplete="off" required>
-                    <span class="status-badge" id="pickup-status">Unverified</span>
-                </div>
-                <div id="pickup-suggestions" class="suggestions-box hidden"></div>
+        <!-- ── Success state ─────────────────────────────────────────── -->
+        <div id="success-section" class="hidden">
+            <div class="success-card">
+                <div style="font-size:3rem; margin-bottom:.5rem;">🎉</div>
+                <h2 style="margin-bottom:.5rem;">Package Created!</h2>
+                <p style="color:var(--text-muted); margin-bottom:1rem;">Your Package ID is:</p>
+                <div class="pkg-id-display" id="pkg-id-display">——</div>
+                <button class="copy-btn" id="copy-btn" onclick="copyId()">📋 Copy ID</button>
+                <p style="color:var(--text-muted); font-size:.83rem; margin-top:1rem;">
+                    Share this ID with the receiver so they can track the package.
+                </p>
             </div>
-
-            <div class="form-group autocomplete-wrapper">
-                <label for="dest-addr">Receiver's Address</label>
-                <div class="input-with-icon">
-                    <input type="text" id="dest-addr" placeholder="Start typing address..." autocomplete="off" required>
-                    <span class="status-badge" id="dest-status">Unverified</span>
-                </div>
-                <div id="dest-suggestions" class="suggestions-box hidden"></div>
-            </div>
-
-            <div class="form-row">
-                <div class="form-group flex-1">
-                    <label for="item">Item</label>
-                    <input type="text" id="item" placeholder="e.g. Vintage Camera" required>
-                </div>
-                
-                <div class="form-group flex-1">
-                    <label for="receiver-id">Receiver ID</label>
-                    <input type="text" id="receiver-id" placeholder="e.g. aditya@example.com" required>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label for="payment">Amount to pay traveller (₹)</label>
-                <input type="number" id="payment" placeholder="e.g. 20" min="0" step="0.5" required>
-            </div>
-
-            <div class="form-group">
-                <label for="description">Description</label>
-                <textarea id="description" rows="3" placeholder="Additional details (fragile, dimensions, etc.)" required></textarea>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="primary-btn" id="submit-btn" disabled>Confirm Package Drop</button>
-            </div>
-            
-            <div id="form-msg" class="form-message hidden"></div>
-        </form>
+            <button class="primary-btn" style="margin-top:1.5rem;" onclick="resetForm()">➕ Send Another Package</button>
+            <a href="index.html" class="back-link" style="display:block; text-align:center; margin-top:1rem;">← Back to Home</a>
+        </div>
     </div>
 
-    <script src="session.js"></script>
-    <script src="app.js"></script>
+    <script src="autocomplete.js"></script>
+    <script>
+        const API = 'http://127.0.0.1:5000';
+        let packagePhotoB64 = '';
+        let createdPkgId = '';
+
+        // ── Address Autocomplete setup ──────────────────────────────────
+        const acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
+        const acReceiver = new AddressAutoComplete('receiver_address', 'receiver_address-sug', () => {});
+
+        // ── Photo capture ───────────────────────────────────────────────
+        initPhotoCapture('pkg-photo-btn', 'pkg-photo-input', 'pkg-photo-preview', (b64) => {
+            packagePhotoB64 = b64;
+        });
+
+        // ── Form submit ─────────────────────────────────────────────────
+        document.getElementById('sender-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submit-btn');
+            const msg = document.getElementById('form-msg');
+
+            // Basic validation
+            const sndr   = acSender.get();
+            const rcvr   = acReceiver.get();
+            const sname  = document.getElementById('sender_name').value.trim();
+            const phone  = document.getElementById('phone').value.trim();
+            const reward = document.getElementById('reward').value.trim();
+
+            if (!sname || !phone || !reward) {
+                showMsg('Please fill in all required fields.', 'error'); return;
+            }
+            if (!sndr.address) { showMsg('Please enter a pickup address.', 'error'); return; }
+            if (!rcvr.address) { showMsg('Please enter a delivery address.', 'error'); return; }
+
+            btn.disabled = true; btn.textContent = 'Creating…';
+
+            const payload = {
+                sender_name:      sname,
+                phone,
+                sender_address:   sndr.address,
+                sender_lat:       sndr.lat,
+                sender_lng:       sndr.lng,
+                receiver_name:    document.getElementById('receiver_name').value.trim(),
+                receiver_phone:   document.getElementById('receiver_phone').value.trim(),
+                receiver_address: rcvr.address,
+                receiver_lat:     rcvr.lat,
+                receiver_lng:     rcvr.lng,
+                description:      document.getElementById('description').value.trim(),
+                reward:           parseFloat(reward),
+                package_photo:    packagePhotoB64,
+            };
+
+            try {
+                const res = await fetch(`${API}/create-package`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    createdPkgId = data.package_id;
+                    document.getElementById('pkg-id-display').textContent = createdPkgId;
+                    document.getElementById('form-section').classList.add('hidden');
+                    document.getElementById('success-section').classList.remove('hidden');
+                } else {
+                    showMsg(data.error || 'Failed to create package.', 'error');
+                }
+            } catch {
+                showMsg('Cannot connect to server. Is Flask running on port 5000?', 'error');
+            }
+
+            btn.disabled = false; btn.textContent = '🚀 Create Package';
+        });
+
+        function showMsg(text, type) {
+            const msg = document.getElementById('form-msg');
+            msg.textContent = text;
+            msg.className = `form-message ${type}`;
+        }
+
+        function copyId() {
+            navigator.clipboard.writeText(createdPkgId).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => btn.textContent = '📋 Copy ID', 2000);
+            });
+        }
+
+        function resetForm() {
+            document.getElementById('sender-form').reset();
+            document.getElementById('pkg-photo-preview').style.display = 'none';
+            packagePhotoB64 = '';
+            document.getElementById('sender_address-badge').textContent = 'Type to search';
+            document.getElementById('sender_address-badge').className = 'addr-badge';
+            document.getElementById('receiver_address-badge').textContent = 'Type to search';
+            document.getElementById('receiver_address-badge').className = 'addr-badge';
+            document.getElementById('success-section').classList.add('hidden');
+            document.getElementById('form-section').classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>

@@ -3,63 +3,482 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HopDrop | Traveller Route</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <title>HopDrop | Traveller — Find Packages</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <style>
+        body { align-items: flex-start; padding: 2rem; }
+
+        /* ── Autocomplete dropdown ────────────────────────────────────── */
+        .ac-wrap { position: relative; }
+        .sug-box {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: #1a2640; border: 1px solid rgba(6,182,212,.4);
+            border-radius: 12px; max-height: 220px; overflow-y: auto;
+            z-index: 9999; box-shadow: 0 16px 40px rgba(0,0,0,.6);
+        }
+        .sug-box.hidden { display: none !important; }
+        .sug-item {
+            padding: .75rem 1rem; cursor: pointer; font-size: .88rem;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            display: flex; align-items: center; gap: .5rem; transition: background .12s;
+            color: var(--text);
+        }
+        .sug-item:last-child { border-bottom: none; }
+        .sug-item:hover:not(.sug-disabled) { background: rgba(6,182,212,.18); }
+        .sug-disabled { color: var(--text-muted); cursor: default; font-style: italic; }
+
+        /* ── Toolbar ─────────────────────────────────────────────────── */
+        .toolbar {
+            display: flex; gap: 1rem; align-items: flex-end;
+            flex-wrap: wrap; margin-bottom: 1.75rem;
+        }
+        .toolbar .form-group { flex: 1; min-width: 170px; margin-bottom: 0; }
+        .toolbar input { padding: .78rem 1rem; }
+        .btn-refresh {
+            background: rgba(6,182,212,.12); border: 1.5px solid rgba(6,182,212,.4);
+            color: var(--secondary); padding: .78rem 1.25rem; border-radius: 12px;
+            font-weight: 700; cursor: pointer; font-size: .9rem; white-space: nowrap;
+            display: inline-flex; align-items: center; gap: .4rem; transition: all .2s;
+            flex-shrink: 0;
+        }
+        .btn-refresh:hover { background: rgba(6,182,212,.22); }
+
+        /* ── Results meta ────────────────────────────────────────────── */
+        .results-meta { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .count-badge {
+            background: rgba(6,182,212,.12); color: var(--secondary);
+            padding: .22rem .75rem; border-radius: 99px; font-size: .8rem; font-weight: 700;
+        }
+
+        /* ── Package card ────────────────────────────────────────────── */
+        .pkg-grid { display: flex; flex-direction: column; gap: 1.25rem; }
+        .pkg-card {
+            background: rgba(255,255,255,.05); border: 1px solid var(--glass-border);
+            border-radius: 18px; padding: 1.5rem; transition: all .3s;
+        }
+        .pkg-card:hover { background: rgba(255,255,255,.08); transform: translateY(-2px); border-color: var(--secondary); }
+        .pkg-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: .5rem; }
+        .pkg-id { font-size: .72rem; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); background: rgba(255,255,255,.07); padding: .25rem .65rem; border-radius: 6px; }
+        .reward-pill { background: rgba(34,197,94,.15); color: var(--success); font-weight: 800; font-size: .95rem; padding: .3rem .9rem; border-radius: 99px; }
+
+        .route-row { display: flex; align-items: center; gap: .75rem; font-size: .95rem; margin-bottom: .6rem; flex-wrap: wrap; }
+        .route-arrow { color: var(--secondary); }
+        .desc-row { font-size: .85rem; color: var(--text-muted); margin-bottom: .75rem; }
+
+        /* Package photo thumbnail */
+        .pkg-thumb { width: 100%; max-height: 200px; object-fit: cover; border-radius: 10px; margin: .75rem 0; border: 1px solid var(--glass-border); }
+
+        /* Status pills */
+        .sp { display: inline-block; padding: .22rem .68rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .sp-pending  { background: rgba(234,179,8,.15);  color: var(--warning); }
+        .sp-accepted { background: rgba(6,182,212,.15);  color: var(--secondary); }
+        .sp-delivered{ background: rgba(34,197,94,.15);  color: var(--success); }
+
+        /* Contact box */
+        .contact-box {
+            background: rgba(6,182,212,.07); border: 1px solid rgba(6,182,212,.2);
+            border-radius: 12px; padding: 1rem 1.25rem; margin: .75rem 0; font-size: .9rem; line-height: 1.85;
+        }
+        .contact-box strong { color: var(--secondary); }
+        .wa-btn {
+            display: inline-flex; align-items: center; gap: .35rem;
+            background: #25d366; color: white; border: none; padding: .38rem .88rem;
+            border-radius: 8px; font-size: .82rem; font-weight: 700; cursor: pointer;
+            text-decoration: none; margin-left: .5rem; transition: filter .2s;
+        }
+        .wa-btn:hover { filter: brightness(1.12); }
+
+        /* Earnings box */
+        .earnings-box {
+            background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.25);
+            border-radius: 12px; padding: 1rem 1.25rem; margin: .75rem 0; line-height: 1.9; font-size: .9rem;
+        }
+        .earnings-box strong { color: var(--success); font-size: 1.1rem; }
+
+        /* Buttons */
+        .card-actions { display: flex; gap: .75rem; flex-wrap: wrap; margin-top: 1rem; }
+        .btn-accept {
+            background: linear-gradient(135deg, var(--primary), #a855f7);
+            border: none; color: white; padding: .65rem 1.35rem; border-radius: 10px;
+            font-weight: 700; cursor: pointer; transition: all .2s;
+        }
+        .btn-accept:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(236,72,153,.35); }
+        .btn-complete {
+            background: linear-gradient(135deg, var(--success), #16a34a);
+            border: none; color: white; padding: .65rem 1.35rem; border-radius: 10px;
+            font-weight: 700; cursor: pointer; transition: all .2s;
+        }
+        .btn-complete:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(34,197,94,.35); }
+        button:disabled { opacity: .5; cursor: not-allowed !important; transform: none !important; box-shadow: none !important; }
+
+        /* Photo modal */
+        .photo-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,.8);
+            display: flex; align-items: center; justify-content: center; z-index: 99999;
+        }
+        .photo-modal.hidden { display: none; }
+        .modal-card {
+            background: #1e293b; border: 1px solid var(--glass-border);
+            border-radius: 20px; padding: 2rem; max-width: 460px; width: 90%; text-align: center;
+        }
+        .modal-card h3 { margin-bottom: .4rem; font-size: 1.2rem; }
+        .modal-card p  { color: var(--text-muted); font-size: .88rem; margin-bottom: 1.25rem; line-height: 1.6; }
+        .modal-preview { width: 100%; max-height: 240px; object-fit: cover; border-radius: 10px; margin: .75rem 0; display: none; border: 1px solid var(--glass-border); }
+        .modal-actions { display: flex; gap: .75rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap; }
+        .photo-pick-btn {
+            background: rgba(6,182,212,.12); border: 1.5px solid var(--secondary);
+            color: var(--secondary); padding: .6rem 1.25rem; border-radius: 10px;
+            cursor: pointer; font-weight: 700; font-size: .9rem; transition: all .2s;
+        }
+        .photo-pick-btn:hover { background: rgba(6,182,212,.22); }
+        .btn-skip { background: transparent; border: 1px solid rgba(255,255,255,.15); color: var(--text-muted); padding: .6rem 1.2rem; border-radius: 10px; cursor: pointer; font-size: .9rem; }
+        .btn-skip:hover { border-color: rgba(255,255,255,.35); color: var(--text); }
+        .btn-modal-confirm {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none; color: white; padding: .6rem 1.4rem; border-radius: 10px;
+            cursor: pointer; font-weight: 700; font-size: .9rem;
+        }
+
+        /* Empty state */
+        .empty-state { text-align: center; color: var(--text-muted); padding: 3rem 0; }
+        .empty-state .icon { font-size: 3rem; margin-bottom: .75rem; }
+        .empty-state code { display: block; font-size: .8rem; margin-top: .5rem; opacity: .6; }
+    </style>
 </head>
 <body>
-    <div class="animated-bg">
-        <div class="orb orb-pink"></div>
-        <div class="orb orb-blue"></div>
-        <div class="orb orb-yellow"></div>
-    </div>
-    
-    <div class="container glass-panel form-layout">
-        <nav class="top-nav">
-            <a href="dashboard.html" class="back-link">← Back to roles</a>
-            <h1 class="logo">Hop<span>Drop</span></h1>
-        </nav>
+<div class="animated-bg">
+    <div class="orb orb-pink"></div>
+    <div class="orb orb-blue"></div>
+    <div class="orb orb-yellow"></div>
+</div>
 
-        <div class="form-header">
-            <h2>Find Packages</h2>
-            <p>Enter your travel route to discover packages you can deliver to earn rewards.</p>
-        </div>
+<div class="container glass-panel form-layout" style="max-width:840px; margin:0 auto;">
+    <nav class="top-nav">
+        <a href="index.html" class="back-link">← Back</a>
+        <h1 class="logo">Hop<span>Drop</span></h1>
+    </nav>
 
-        <form id="traveller-form" class="sender-form">
-            <div class="form-group autocomplete-wrapper">
-                <label for="start-point">Start Point</label>
-                <div class="input-with-icon">
-                    <input type="text" id="start-point" placeholder="Start typing address..." autocomplete="off" required>
-                    <span class="status-badge" id="start-status">Unverified</span>
-                </div>
-                <div id="start-suggestions" class="suggestions-box hidden"></div>
-            </div>
-
-            <div class="form-group autocomplete-wrapper">
-                <label for="end-point">End Point (Destination)</label>
-                <div class="input-with-icon">
-                    <input type="text" id="end-point" placeholder="Start typing address..." autocomplete="off" required>
-                    <span class="status-badge" id="end-status">Unverified</span>
-                </div>
-                <div id="end-suggestions" class="suggestions-box hidden"></div>
-            </div>
-
-            <div class="form-actions">
-                <button type="submit" class="primary-btn" id="search-btn" disabled>Search Packages on Route</button>
-            </div>
-            
-            <div id="search-msg" class="form-message hidden"></div>
-        </form>
-
-        <div id="results-area" class="results-area hidden">
-            <h3 class="results-title">Packages Found</h3>
-            <div id="packages-list" class="packages-list">
-                <!-- Packages injected via JS -->
-            </div>
-        </div>
+    <div class="form-header">
+        <h2>Find Packages to Deliver</h2>
+        <p>Browse available packages, accept one, pick up from sender, and earn your reward.</p>
     </div>
 
-    <script src="session.js"></script>
-    <script src="app.js"></script>
+    <!-- ── Toolbar ────────────────────────────────────────────────────── -->
+    <div class="toolbar">
+        <div class="form-group">
+            <label for="traveller-name">Your Name</label>
+            <input type="text" id="traveller-name" value="Traveller" placeholder="e.g. Aditya Kumar">
+        </div>
+
+        <!-- Destination filter with autocomplete -->
+        <div class="form-group ac-wrap">
+            <label for="route-filter">Filter by destination <span style="color:var(--text-muted);font-size:.78rem;">(optional)</span></label>
+            <input type="text" id="route-filter" placeholder="e.g. Mangalore, Udupi…" autocomplete="off">
+            <div id="route-filter-sug" class="sug-box hidden"></div>
+        </div>
+
+        <button class="btn-refresh" id="refresh-btn" onclick="loadPackages()">🔄 Refresh</button>
+    </div>
+
+    <!-- ── Package list ────────────────────────────────────────────────── -->
+    <div class="results-meta">
+        <span style="font-size:.9rem; color:var(--text-muted);">Available Packages</span>
+        <span class="count-badge" id="count-badge">—</span>
+    </div>
+    <div id="pkg-grid" class="pkg-grid"></div>
+</div>
+
+<!-- ── Photo proof modal ─────────────────────────────────────────── -->
+<div class="photo-modal hidden" id="photo-modal">
+    <div class="modal-card">
+        <h3 id="modal-title">📷 Package Photo</h3>
+        <p id="modal-desc">Take a photo of the package for safety records.</p>
+        <button class="photo-pick-btn" id="modal-pick-btn">📷 Camera / Choose File</button>
+        <input type="file" id="modal-file-input" accept="image/*" capture="environment" hidden>
+        <img id="modal-preview" class="modal-preview" alt="Preview">
+        <div class="modal-actions">
+            <button class="btn-skip" id="modal-skip">⏭ Skip Photo</button>
+            <button class="btn-modal-confirm" id="modal-confirm">✅ Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script src="autocomplete.js"></script>
+<script>
+/* ─── Config ─────────────────────────────────────────────────────────────── */
+const API = 'http://127.0.0.1:5000';
+
+/* ─── Session state ──────────────────────────────────────────────────────── */
+const acceptedCache  = {};   // pkgId → contact data returned from /accept-package
+const deliveredCache = {};   // pkgId → earnings data returned from /complete-delivery
+
+/* ─── Filter autocomplete ────────────────────────────────────────────────── */
+// Initialized inside DOMContentLoaded to ensure DOM is ready
+let acFilter = null;
+
+/* ─── Load & display packages ────────────────────────────────────────────── */
+async function loadPackages() {
+    const grid  = document.getElementById('pkg-grid');
+    const badge = document.getElementById('count-badge');
+
+    grid.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Fetching packages…</p></div>`;
+    badge.textContent = '…';
+
+    try {
+        /* 1. Fetch pending packages (optionally filtered by destination text) */
+        const filterVal = document.getElementById('route-filter').value.trim();
+        const pendingUrl = filterVal
+            ? `${API}/match-packages?route=${encodeURIComponent(filterVal)}`
+            : `${API}/match-packages`;
+
+        const pendingRes = await fetch(pendingUrl);
+        if (!pendingRes.ok) throw new Error(`Server error: ${pendingRes.status}`);
+        let pkgs = await pendingRes.json();
+
+        /* 2. Also fetch full list so our own accepted/delivered cards stay visible */
+        try {
+            const fullRes  = await fetch(`${API}/packages`);
+            const fullList = fullRes.ok ? await fullRes.json() : [];
+            const seenIds  = new Set(pkgs.map(p => p.id));
+
+            for (const fp of fullList) {
+                if (!seenIds.has(fp.id) && (acceptedCache[fp.id] || deliveredCache[fp.id])) {
+                    pkgs.push(fp);
+                    seenIds.add(fp.id);
+                }
+            }
+        } catch { /* ignore — pending packages still render */ }
+
+        badge.textContent = pkgs.length ? `${pkgs.length} found` : 'None';
+
+        if (!pkgs.length) {
+            const filterNote = filterVal ? `<code>for "${filterVal}"</code>` : '';
+            grid.innerHTML = `<div class="empty-state">
+                <div class="icon">📭</div>
+                <p>No packages available ${filterNote}.<br>Ask a sender to create one!</p>
+            </div>`;
+            return;
+        }
+
+        grid.innerHTML = pkgs.map(renderCard).join('');
+
+    } catch (err) {
+        console.error('loadPackages error:', err);
+        grid.innerHTML = `<div class="empty-state">
+            <div class="icon">❌</div>
+            <p>Could not reach the server.<br>Make sure Flask is running on port 5000.</p>
+            <code>${err.message}</code>
+        </div>`;
+    }
+}
+
+/* ─── Render a single package card ──────────────────────────────────────── */
+function renderCard(p) {
+    const spCls = { pending:'sp-pending', accepted:'sp-accepted', delivered:'sp-delivered' }[p.status] || 'sp-pending';
+
+    // Sender thumbnail (set by sender)
+    const thumb = p.package_photo
+        ? `<img class="pkg-thumb" src="${p.package_photo}" alt="Package photo">`
+        : '';
+
+    // Contact block (shown only after accept)
+    const contact = acceptedCache[p.id] ? (() => {
+        const c  = acceptedCache[p.id];
+        const wa = `https://wa.me/91${c.phone}?text=${encodeURIComponent(
+            `Hi ${c.sender_name}, I'm your HopDrop traveller. I'll pick up the package soon!`)}`;
+        return `<div class="contact-box">
+            📞 <strong>Sender Contact — Unlocked</strong><br>
+            Name: ${c.sender_name}<br>
+            Phone: <a href="tel:${c.phone}" style="color:var(--secondary);">${c.phone}</a>
+            <a href="${wa}" target="_blank" class="wa-btn">💬 WhatsApp</a><br>
+            Pickup: ${c.sender_address}<br>
+            Drop to: ${c.receiver_address}
+            ${c.receiver_name  ? `<br>Receiver: ${c.receiver_name}`  : ''}
+            ${c.receiver_phone ? ` · ${c.receiver_phone}` : ''}
+        </div>`;
+    })() : '';
+
+    // Earnings block
+    const earnings = deliveredCache[p.id] ? (() => {
+        const e = deliveredCache[p.id];
+        return `<div class="earnings-box">
+            🎉 Delivery Complete!<br>
+            You earned: <strong>₹${e.traveller_earned}</strong><br>
+            Platform fee: ₹${e.platform_fee}
+        </div>`;
+    })() : '';
+
+    // Action buttons
+    let actions = '';
+    if (p.status === 'pending') {
+        actions = `<button class="btn-accept" onclick="startAccept('${p.id}')">✅ Accept Package</button>`;
+    } else if (p.status === 'accepted' && acceptedCache[p.id]) {
+        actions = `<button class="btn-complete" onclick="startComplete('${p.id}')">🏁 Complete Delivery</button>`;
+    } else if (p.status === 'delivered') {
+        actions = `<span class="sp sp-delivered">✓ Delivered</span>`;
+    }
+
+    return `
+    <div class="pkg-card" id="card-${p.id}">
+        <div class="pkg-card-top">
+            <span class="pkg-id">PKG # ${p.id}</span>
+            <span class="reward-pill">₹ ${parseFloat(p.reward).toFixed(2)}</span>
+        </div>
+        <div class="route-row">
+            <span>📍 ${p.sender_address}</span>
+            <span class="route-arrow">→</span>
+            <span>🏁 ${p.receiver_address}</span>
+        </div>
+        ${p.description ? `<div class="desc-row">📦 ${p.description}</div>` : ''}
+        <div>Status: <span class="sp ${spCls}">${p.status}</span></div>
+        ${thumb}
+        ${contact}
+        ${earnings}
+        <div class="card-actions">${actions}</div>
+    </div>`;
+}
+
+/* ─── Accept package flow ────────────────────────────────────────────────── */
+function startAccept(pkgId) {
+    openModal(
+        '📷 Pickup Photo (optional)',
+        'Take a photo of the package when you receive it from the sender — proof of condition.',
+        async (photo) => {
+            const btn = document.querySelector(`#card-${pkgId} .btn-accept`);
+            if (btn) { btn.disabled = true; btn.textContent = 'Accepting…'; }
+
+            try {
+                const tName = document.getElementById('traveller-name').value.trim() || 'Traveller';
+                const res = await fetch(`${API}/accept-package`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ package_id: pkgId, traveller_name: tName, pickup_photo: photo }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    acceptedCache[pkgId] = data;
+                    await loadPackages();
+                } else {
+                    alert(data.error || 'Could not accept package.');
+                    if (btn) { btn.disabled = false; btn.textContent = '✅ Accept Package'; }
+                }
+            } catch (err) {
+                alert('Server error: ' + err.message);
+                if (btn) btn.disabled = false;
+            }
+        }
+    );
+}
+
+/* ─── Complete delivery flow ─────────────────────────────────────────────── */
+function startComplete(pkgId) {
+    openModal(
+        '📷 Delivery Proof (optional)',
+        'Take a photo of the delivered package at the receiver\'s location as proof.',
+        async (photo) => {
+            const btn = document.querySelector(`#card-${pkgId} .btn-complete`);
+            if (btn) { btn.disabled = true; btn.textContent = 'Completing…'; }
+
+            try {
+                const res = await fetch(`${API}/complete-delivery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ package_id: pkgId, delivery_photo: photo }),
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    deliveredCache[pkgId] = data;
+                    await loadPackages();
+                } else {
+                    alert(data.error || 'Could not complete delivery.');
+                    if (btn) { btn.disabled = false; btn.textContent = '🏁 Complete Delivery'; }
+                }
+            } catch (err) {
+                alert('Server error: ' + err.message);
+                if (btn) btn.disabled = false;
+            }
+        }
+    );
+}
+
+/* ─── Photo modal ────────────────────────────────────────────────────────── */
+let modalCallback = null;
+let capturedPhoto = '';
+
+function openModal(title, desc, cb) {
+    modalCallback = cb;
+    capturedPhoto = '';
+    document.getElementById('modal-title').textContent   = title;
+    document.getElementById('modal-desc').textContent    = desc;
+    document.getElementById('modal-preview').style.display = 'none';
+    document.getElementById('modal-file-input').value   = '';
+    document.getElementById('photo-modal').classList.remove('hidden');
+}
+
+function closeModal(runCb) {
+    document.getElementById('photo-modal').classList.add('hidden');
+    if (runCb && modalCallback) modalCallback(capturedPhoto);
+    modalCallback = null;
+}
+
+/* ─── DOMContentLoaded — wire everything up ──────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+    /* ── Filter autocomplete ─────────────────────────────────────────── */
+    acFilter = new AddressAutoComplete('route-filter', 'route-filter-sug', () => {
+        // When user SELECTS a suggestion, immediately reload packages
+        loadPackages();
+    });
+
+    // ALSO reload when user simply stops typing (debounce) — no need to select suggestion
+    let filterTimer = null;
+    document.getElementById('route-filter').addEventListener('input', () => {
+        clearTimeout(filterTimer);
+        filterTimer = setTimeout(loadPackages, 600);
+    });
+
+    // Clear filter and reload on Escape
+    document.getElementById('route-filter').addEventListener('keydown', e => {
+        if (e.key === 'Escape') {
+            document.getElementById('route-filter').value = '';
+            acFilter.close();
+            loadPackages();
+        }
+        if (e.key === 'Enter') {
+            acFilter.close();
+            loadPackages();
+        }
+    });
+
+    /* ── Photo modal events ──────────────────────────────────────────── */
+    document.getElementById('modal-pick-btn').addEventListener('click', () => {
+        document.getElementById('modal-file-input').click();
+    });
+
+    document.getElementById('modal-file-input').addEventListener('change', function() {
+        const file = this.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = e => {
+            capturedPhoto = e.target.result;
+            const prev = document.getElementById('modal-preview');
+            prev.src = capturedPhoto;
+            prev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+    });
+
+    document.getElementById('modal-skip').addEventListener('click',    () => closeModal(true));
+    document.getElementById('modal-confirm').addEventListener('click', () => closeModal(true));
+
+    // Click outside modal card to dismiss
+    document.getElementById('photo-modal').addEventListener('click', e => {
+        if (e.target === document.getElementById('photo-modal')) closeModal(true);
+    });
+
+    /* ── Initial load ────────────────────────────────────────────────── */
+    loadPackages();
+});
+</script>
 </body>
 </html>
