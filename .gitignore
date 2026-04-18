@@ -10,3 +10,4 @@ __pycache__/
 # Frontend build
 dist/
 node_modules/
+ 

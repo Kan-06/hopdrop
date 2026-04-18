@@ -27,6 +27,42 @@ LOCK_AMOUNT = 50.0              # ₹50 deposit locked when traveller accepts
 def index():
     return app.send_static_file('index.html')
 
+def get_or_create_user(name):
+    if name not in users:
+        # Give a starting balance to test easily
+        users[name] = {"wallet_balance": 150.0, "locked_balance": 0.0, "transactions": [], "verified": False}
+    return users[name]
+
+@app.route('/wallet/<name>', methods=['GET'])
+def get_wallet(name):
+    user = get_or_create_user(name)
+    return jsonify(user)
+
+@app.route('/top-up', methods=['POST'])
+def top_up():
+    data = request.get_json()
+    name = data.get('traveller_name', '')
+    amount = float(data.get('amount', 0))
+    if not name or amount <= 0:
+        return jsonify({'error': 'Invalid name or amount'}), 400
+    
+    user = get_or_create_user(name)
+    user['wallet_balance'] += amount
+    user['transactions'].append(f'Top-Up: Added ₹{amount}')
+    return jsonify({'message': f'Successfully topped up ₹{amount}', 'new_balance': user['wallet_balance']})
+
+@app.route('/verify-identity', methods=['POST'])
+def verify_identity():
+    data = request.get_json()
+    name = data.get('traveller_name', '')
+    if not name:
+        return jsonify({'error': 'Invalid name'}), 400
+    
+    user = get_or_create_user(name)
+    user['verified'] = True
+    user['transactions'].append('Identity Verified: Student ID & Selfie captured')
+    return jsonify({'message': 'Identity Verified Successfully!'})
+
 
 # ── Wallet helpers ─────────────────────────────────────────────────────────────
 def get_or_create_wallet(identifier):
@@ -293,10 +329,8 @@ def complete_delivery():
         user['transactions'].append(f'Earned ₹{traveller_earned} from package {pkg_id}')
 
     return jsonify({
-        'message':          'Delivery completed! 🎉',
+        'message':          'Delivery confirmed! Waiting for Sender to complete the payment. 💸',
         'reward':           reward,
-        'traveller_earned': traveller_earned,
-        'platform_fee':     platform_fee,
     })
 
 
