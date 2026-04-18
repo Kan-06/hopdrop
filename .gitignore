@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+ENV/
+
+# Firebase / Service Keys (SENSITIVE)
+serviceAccountKey.json
+
+# Local Databases
+app.db
+
+# IDEs
+.vscode/
+.idea/

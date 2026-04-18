@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HopDrop | Traveller Route</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="orb orb-pink"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-yellow"></div>
+    </div>
+    
+    <div class="container glass-panel form-layout">
+        <nav class="top-nav">
+            <a href="dashboard.html" class="back-link">← Back to roles</a>
+            <h1 class="logo">Hop<span>Drop</span></h1>
+        </nav>
+
+        <div class="form-header">
+            <h2>Find Packages</h2>
+            <p>Enter your travel route to discover packages you can deliver to earn rewards.</p>
+        </div>
+
+        <form id="traveller-form" class="sender-form">
+            <div class="form-group autocomplete-wrapper">
+                <label for="start-point">Start Point</label>
+                <div class="input-with-icon">
+                    <input type="text" id="start-point" placeholder="Start typing address..." autocomplete="off" required>
+                    <span class="status-badge" id="start-status">Unverified</span>
+                </div>
+                <div id="start-suggestions" class="suggestions-box hidden"></div>
+            </div>
+
+            <div class="form-group autocomplete-wrapper">
+                <label for="end-point">End Point (Destination)</label>
+                <div class="input-with-icon">
+                    <input type="text" id="end-point" placeholder="Start typing address..." autocomplete="off" required>
+                    <span class="status-badge" id="end-status">Unverified</span>
+                </div>
+                <div id="end-suggestions" class="suggestions-box hidden"></div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn" id="search-btn" disabled>Search Packages on Route</button>
+            </div>
+            
+            <div id="search-msg" class="form-message hidden"></div>
+        </form>
+
+        <div id="results-area" class="results-area hidden">
+            <h3 class="results-title">Packages Found</h3>
+            <div id="packages-list" class="packages-list">
+                <!-- Packages injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

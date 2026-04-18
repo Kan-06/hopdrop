@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HopDrop | Sender Details</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="animated-bg">
+        <div class="orb orb-pink"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-yellow"></div>
+    </div>
+    
+    <div class="container glass-panel form-layout">
+        <nav class="top-nav">
+            <a href="dashboard.html" class="back-link">← Back to roles</a>
+            <h1 class="logo">Hop<span>Drop</span></h1>
+        </nav>
+
+        <div class="form-header">
+            <h2>Package Details</h2>
+            <p>Fill out the information below to initiate a drop.</p>
+        </div>
+
+        <form id="sender-form" class="sender-form">
+            <div class="form-group autocomplete-wrapper">
+                <label for="pickup-addr">Sender's Address</label>
+                <div class="input-with-icon">
+                    <input type="text" id="pickup-addr" placeholder="Start typing address..." autocomplete="off" required>
+                    <span class="status-badge" id="pickup-status">Unverified</span>
+                </div>
+                <div id="pickup-suggestions" class="suggestions-box hidden"></div>
+            </div>
+
+            <div class="form-group autocomplete-wrapper">
+                <label for="dest-addr">Receiver's Address</label>
+                <div class="input-with-icon">
+                    <input type="text" id="dest-addr" placeholder="Start typing address..." autocomplete="off" required>
+                    <span class="status-badge" id="dest-status">Unverified</span>
+                </div>
+                <div id="dest-suggestions" class="suggestions-box hidden"></div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group flex-1">
+                    <label for="item">Item</label>
+                    <input type="text" id="item" placeholder="e.g. Vintage Camera" required>
+                </div>
+                
+                <div class="form-group flex-1">
+                    <label for="payment">Amount to pay traveller (₹)</label>
+                    <input type="number" id="payment" placeholder="e.g. 20" min="0" step="0.5" required>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" rows="3" placeholder="Additional details (fragile, dimensions, etc.)" required></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn" id="submit-btn" disabled>Confirm Package Drop</button>
+            </div>
+            
+            <div id="form-msg" class="form-message hidden"></div>
+        </form>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
