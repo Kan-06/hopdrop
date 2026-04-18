@@ -222,23 +222,23 @@
         if (session) {
             hdBar('user-bar');
             // Pre-fill sender fields from account
-            document.addEventListener('DOMContentLoaded', () => {
-                document.getElementById('sender_name').value = session.name;
+        // ── Address Autocomplete + Photo (inside DOMContentLoaded) ────────
+        let acSender, acReceiver;
+        document.addEventListener('DOMContentLoaded', () => {
+            // Pre-fill from session
+            if (session) {
+                document.getElementById('sender_name').value    = session.name;
                 document.getElementById('sender_name').readOnly = true;
-                document.getElementById('phone').value = session.phone;
-                document.getElementById('phone').readOnly = true;
                 document.getElementById('sender_name').style.opacity = '.7';
-                document.getElementById('phone').style.opacity = '.7';
+                document.getElementById('phone').value          = session.phone;
+                document.getElementById('phone').readOnly       = true;
+                document.getElementById('phone').style.opacity  = '.7';
+            }
+            acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
+            acReceiver = new AddressAutoComplete('receiver_address', 'receiver_address-sug', () => {});
+            initPhotoCapture('pkg-photo-btn', 'pkg-photo-input', 'pkg-photo-preview', (b64) => {
+                packagePhotoB64 = b64;
             });
-        }
-
-        // ── Address Autocomplete setup ──────────────────────────────────
-        const acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
-        const acReceiver = new AddressAutoComplete('receiver_address', 'receiver_address-sug', () => {});
-
-        // ── Photo capture ───────────────────────────────────────────────
-        initPhotoCapture('pkg-photo-btn', 'pkg-photo-input', 'pkg-photo-preview', (b64) => {
-            packagePhotoB64 = b64;
         });
 
         // ── Form submit ─────────────────────────────────────────────────
@@ -298,8 +298,7 @@
                     // Build WhatsApp button for receiver
                     const waWrap = document.getElementById('wa-receiver-wrap');
                     if (savedReceiverPhone) {
-                        const trackUrl = 'http://127.0.0.1:5000/receiver.html';
-                        const waMsg = `Hi ${savedReceiverName}! 📦\n${savedSenderName} has sent you a package via HopDrop.\n\nPackage ID: ${createdPkgId}\nTrack your delivery at: ${trackUrl}\n\n(Log in as Receiver using your phone number to see updates & proof photos)`;
+                        const waMsg = `Hi ${savedReceiverName}! 📦\n${savedSenderName} has sent you a package via HopDrop.\n\nPackage ID: ${createdPkgId}\n\nTo track: Open HopDrop → Sign in as Receiver → Enter this Package ID.`;
                         const waUrl = `https://wa.me/91${savedReceiverPhone}?text=${encodeURIComponent(waMsg)}`;
                         waWrap.innerHTML = `
                             <a href="${waUrl}" target="_blank"
@@ -342,6 +341,13 @@
             document.getElementById('receiver_address-badge').className = 'addr-badge';
             document.getElementById('success-section').classList.add('hidden');
             document.getElementById('form-section').classList.remove('hidden');
+            // Re-apply session fields (form.reset() clears them)
+            if (session) {
+                document.getElementById('sender_name').value    = session.name;
+                document.getElementById('sender_name').readOnly = true;
+                document.getElementById('phone').value          = session.phone;
+                document.getElementById('phone').readOnly       = true;
+            }
         }
     </script>
 </body>

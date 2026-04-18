@@ -118,10 +118,8 @@
     <!-- ── Package ID input (primary) ───────────────────────────────── -->
     <div class="track-row">
         <input type="text" id="pkg-id-input"
-            placeholder="e.g. A1B2C3D4"
-            maxlength="8"
-            autocomplete="off"
-            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+            placeholder="Package ID (e.g. 890B8649) or your phone number"
+            autocomplete="off" spellcheck="false"
         >
         <button class="btn-track" id="track-btn" onclick="trackById()">🔍 Track</button>
     </div>
@@ -149,33 +147,72 @@ if (session) hdBar('user-bar');
 
 /* ── Track by Package ID ─────────────────────────────────────────────── */
 async function trackById() {
-    const pkgId = document.getElementById('pkg-id-input').value.trim().toUpperCase();
-    const btn   = document.getElementById('track-btn');
-    const area  = document.getElementById('results-area');
+    const raw  = document.getElementById('pkg-id-input').value;
+    const btn  = document.getElementById('track-btn');
+    const area = document.getElementById('results-area');
 
-    if (!pkgId || pkgId.length < 4) {
-        area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Please enter a valid Package ID.</p></div>`;
+    // Strip EVERYTHING that is not A-Z or 0-9 (catches spaces, #, dashes,
+    // invisible Unicode chars that WhatsApp sometimes inserts, etc.)
+    let cleaned = raw.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+
+    // Remove 'PKG' prefix if present (user may copy the display label)
+    if (cleaned.startsWith('PKG')) cleaned = cleaned.slice(3);
+
+    if (cleaned.length < 4) {
+        area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Please enter a valid Package ID or phone number.</p></div>`;
         return;
     }
 
-    btn.disabled = true; btn.textContent = 'Tracking…';
-    area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Looking up package <strong>${pkgId}</strong>…</p></div>`;
+    btn.disabled = true; btn.textContent = 'Searching…';
+    area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Looking up <strong>${cleaned}</strong>…</p></div>`;
 
     try {
-        const res = await fetch(`${API}/package/${pkgId}`);
-        if (res.status === 404) {
-            area.innerHTML = `<div class="empty-state"><div class="icon">❌</div>
-                <p>No package found with ID <strong>${pkgId}</strong>.<br>
-                Double-check the ID in your WhatsApp message.</p></div>`;
-        } else if (!res.ok) {
-            throw new Error(`Server error ${res.status}`);
-        } else {
-            const pkg = await res.json();
-            area.innerHTML = renderCard(pkg);
+        // ── Case 1: 10-digit number → phone lookup ─────────────────────
+        if (/^\d{10}$/.test(cleaned)) {
+            const res  = await fetch(`${API}/receiver-packages?phone=${encodeURIComponent(cleaned)}`);
+            const pkgs = res.ok ? await res.json() : [];
+            if (pkgs.length) {
+                area.innerHTML = `<p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1rem;">
+                    Found <strong style="color:var(--text);">${pkgs.length}</strong> package(s)</p>
+                    ${pkgs.map(renderCard).join('')}`;
+            } else {
+                area.innerHTML = `<div class="empty-state"><div class="icon">📫</div>
+                    <p>No packages found for phone <strong>${cleaned}</strong>.</p></div>`;
+            }
         }
-    } catch (err) {
+        // ── Case 2: Package ID lookup ──────────────────────────────────
+        else {
+            const res = await fetch(`${API}/package/${cleaned}`);
+
+            if (res.ok) {
+                const pkg = await res.json();
+                area.innerHTML = renderCard(pkg);
+
+            } else if (res.status === 404) {
+                // Fallback: search all packages for a partial ID match
+                const allRes  = await fetch(`${API}/packages`);
+                const allPkgs = allRes.ok ? await allRes.json() : [];
+                const match   = allPkgs.find(p =>
+                    p.id === cleaned ||
+                    p.id.includes(cleaned) ||
+                    cleaned.includes(p.id)
+                );
+                if (match) {
+                    area.innerHTML = renderCard(match);
+                } else {
+                    const ids = allPkgs.map(p => p.id).join(', ') || 'none in system';
+                    area.innerHTML = `<div class="empty-state"><div class="icon">❌</div>
+                        <p>No package found for ID <strong>${cleaned}</strong>.<br>
+                        <span style="font-size:.8rem;opacity:.6;">Packages in system: ${ids}</span></p></div>`;
+                }
+            } else {
+                throw new Error(`Server error ${res.status}`);
+            }
+        }
+    } catch(err) {
         area.innerHTML = `<div class="empty-state"><div class="icon">❌</div>
             <p>Cannot reach the server.<br>Make sure Flask is running on port 5000.</p></div>`;
+        console.error('trackById error:', err);
     }
 
     btn.disabled = false; btn.textContent = '🔍 Track';

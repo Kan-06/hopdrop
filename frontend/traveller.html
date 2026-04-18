@@ -215,9 +215,11 @@ const API = 'http://127.0.0.1:5000';
 const session = hdRequire('Traveller');
 if (session) hdBar('user-bar');
 
-/* ─── Session state ──────────────────────────────────────────────────────── */
-const acceptedCache  = {};   // pkgId → contact data returned from /accept-package
-const deliveredCache = {};   // pkgId → earnings data returned from /complete-delivery
+/* ─── Session state (sessionStorage-backed so refresh keeps accepted packages) ─ */
+function _cg(k) { try { return JSON.parse(sessionStorage.getItem(k) || '{}'); } catch { return {}; } }
+function _cs(k, o) { sessionStorage.setItem(k, JSON.stringify(o)); }
+const acceptedCache  = new Proxy(_cg('hd_acc'), { set(t,k,v){ t[k]=v; _cs('hd_acc',t);  return true; } });
+const deliveredCache = new Proxy(_cg('hd_del'), { set(t,k,v){ t[k]=v; _cs('hd_del',t); return true; } });
 
 /* ─── Filter autocomplete ────────────────────────────────────────────────── */
 // Initialized inside DOMContentLoaded to ensure DOM is ready
@@ -437,6 +439,7 @@ function closeModal(runCb) {
 document.addEventListener('DOMContentLoaded', () => {
     /* Auto-fill traveller name from session */
     if (session) {
+        hdBar('user-bar');
         document.getElementById('traveller-name').value = session.name;
     }
 
