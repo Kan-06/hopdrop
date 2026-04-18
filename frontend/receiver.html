@@ -7,65 +7,93 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <style>
-        /* ── Search ──────────────────────────────────────────────────── */
-        .search-row { display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 2rem; flex-wrap: wrap; }
-        .search-row .form-group { flex: 1; min-width: 200px; margin-bottom: 0; }
-        .btn-search { background: linear-gradient(135deg, var(--primary), var(--secondary)); border: none; color: white; padding: .9rem 1.5rem; border-radius: 12px; font-weight: 700; cursor: pointer; font-size: .95rem; transition: all .2s; flex-shrink: 0; }
-        .btn-search:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(6,182,212,.3); }
-        .btn-search:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        /* ── Track input row ──────────────────────────────────────────── */
+        .track-hero {
+            text-align: center; margin-bottom: 2rem;
+        }
+        .track-hero h2 { font-size: 1.6rem; margin-bottom: .4rem; }
+        .track-hero p  { color: var(--text-muted); font-size: .92rem; }
+
+        .track-row {
+            display: flex; gap: .75rem; align-items: stretch; margin-bottom: 1rem; flex-wrap: wrap;
+        }
+        .track-row input {
+            flex: 1; padding: .9rem 1.25rem;
+            font-size: 1.1rem; font-weight: 700; letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .btn-track {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none; color: white; padding: .9rem 1.6rem; border-radius: 12px;
+            font-weight: 700; font-size: 1rem; cursor: pointer; white-space: nowrap;
+            transition: all .2s; flex-shrink: 0;
+        }
+        .btn-track:hover    { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(6,182,212,.3); }
+        .btn-track:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+        /* ── All-packages toggle ──────────────────────────────────────── */
+        .all-pkgs-btn {
+            width: 100%; background: rgba(255,255,255,.04);
+            border: 1px solid rgba(255,255,255,.1); color: var(--text-muted);
+            padding: .6rem; border-radius: 10px; cursor: pointer; font-size: .85rem;
+            transition: all .2s; margin-bottom: 1.5rem;
+        }
+        .all-pkgs-btn:hover { border-color: var(--secondary); color: var(--secondary); }
 
         /* ── Status timeline ─────────────────────────────────────────── */
-        .timeline { display: flex; align-items: center; gap: 0; margin: 1.25rem 0; }
-        .tl-step { display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; }
+        .timeline { display: flex; align-items: center; margin: 1.25rem 0; }
+        .tl-step { display: flex; flex-direction: column; align-items: center; flex: 1; }
         .tl-dot {
-            width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,.15);
-            background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center;
-            font-size: .85rem; z-index: 1; transition: all .3s;
+            width: 32px; height: 32px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.15); background: rgba(255,255,255,.06);
+            display: flex; align-items: center; justify-content: center;
+            font-size: .85rem; transition: all .3s;
         }
-        .tl-dot.done { background: rgba(34,197,94,.2); border-color: var(--success); }
+        .tl-dot.done   { background: rgba(34,197,94,.2); border-color: var(--success); }
         .tl-dot.active { background: rgba(6,182,212,.2); border-color: var(--secondary); box-shadow: 0 0 0 4px rgba(6,182,212,.15); }
-        .tl-label { font-size: .72rem; color: var(--text-muted); margin-top: .4rem; text-align: center; font-weight: 600; }
+        .tl-label { font-size: .72rem; color: var(--text-muted); margin-top: .4rem; font-weight: 600; text-align: center; }
         .tl-label.done   { color: var(--success); }
         .tl-label.active { color: var(--secondary); }
-        .tl-line { flex: 1; height: 2px; background: rgba(255,255,255,.1); transition: background .3s; }
+        .tl-line { flex: 1; height: 2px; background: rgba(255,255,255,.1); }
         .tl-line.done { background: var(--success); }
 
-        /* ── Package card ────────────────────────────────────────────── */
+        /* ── Package card ─────────────────────────────────────────────── */
         .pkg-card {
             background: rgba(255,255,255,.05); border: 1px solid var(--glass-border);
-            border-radius: 18px; padding: 1.5rem; margin-bottom: 1.25rem; transition: all .3s;
+            border-radius: 18px; padding: 1.5rem; margin-bottom: 1.25rem;
         }
-        .pkg-card:hover { background: rgba(255,255,255,.08); border-color: var(--secondary); }
-
         .pkg-card-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: .5rem; }
-        .pkg-id { font-size: .72rem; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); background: rgba(255,255,255,.06); padding: .25rem .6rem; border-radius: 6px; }
+        .pkg-id-tag { font-size: .72rem; font-weight: 700; letter-spacing: 1.5px; color: var(--text-muted); background: rgba(255,255,255,.07); padding: .25rem .65rem; border-radius: 6px; }
 
-        .info-row { font-size: .9rem; margin-bottom: .4rem; }
+        .info-row { font-size: .9rem; margin-bottom: .4rem; line-height: 1.6; }
         .info-row span { color: var(--text-muted); }
 
-        /* ── Proof photos row ────────────────────────────────────────── */
+        /* Status pill */
+        .sp { display: inline-block; padding: .22rem .7rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
+        .sp-pending  { background: rgba(234,179,8,.15);  color: var(--warning); }
+        .sp-accepted { background: rgba(6,182,212,.15);  color: var(--secondary); }
+        .sp-delivered{ background: rgba(34,197,94,.15);  color: var(--success); }
+
+        /* Proof photos */
         .proof-photos { display: flex; gap: 1rem; margin-top: .75rem; flex-wrap: wrap; }
-        .proof-item { flex: 1; min-width: 130px; }
+        .proof-item { flex: 1; min-width: 120px; }
         .proof-item label { font-size: .75rem; color: var(--text-muted); font-weight: 600; display: block; margin-bottom: .35rem; }
-        .proof-item img { width: 100%; border-radius: 10px; border: 1px solid var(--glass-border); object-fit: cover; max-height: 140px; }
-        .proof-placeholder { background: rgba(255,255,255,.04); border: 1.5px dashed rgba(255,255,255,.12); border-radius: 10px; height: 80px; display: flex; align-items: center; justify-content: center; font-size: .78rem; color: var(--text-muted); }
+        .proof-item img { width: 100%; border-radius: 10px; border: 1px solid var(--glass-border); object-fit: cover; max-height: 130px; }
+        .proof-ph { background: rgba(255,255,255,.04); border: 1.5px dashed rgba(255,255,255,.12); border-radius: 10px; height: 72px; display: flex; align-items: center; justify-content: center; font-size: .78rem; color: var(--text-muted); }
 
-        /* ── Confirm receipt button ───────────────────────────────────── */
-        .btn-confirm-receipt { background: linear-gradient(135deg, var(--success), #16a34a); border: none; color: white; padding: .6rem 1.25rem; border-radius: 10px; font-weight: 700; cursor: pointer; font-size: .88rem; margin-top: 1rem; transition: all .2s; }
-        .btn-confirm-receipt:hover { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(34,197,94,.35); }
-        .btn-confirm-receipt:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+        /* Delivered banner */
+        .delivered-banner {
+            background: rgba(34,197,94,.08); border: 1px solid rgba(34,197,94,.25);
+            border-radius: 12px; padding: 1rem; margin-top: .75rem; font-size: .9rem; line-height: 1.7;
+        }
 
-        /* ── Status pill ─────────────────────────────────────────────── */
-        .status-pill { display: inline-block; padding: .22rem .7rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
-        .s-pending   { background: rgba(234,179,8,.15);  color: var(--warning); }
-        .s-accepted  { background: rgba(6,182,212,.15);  color: var(--secondary); }
-        .s-delivered { background: rgba(34,197,94,.15);  color: var(--success); }
+        /* ── Empty / Error state ─────────────────────────────────────── */
+        .empty-state { text-align: center; color: var(--text-muted); padding: 2.5rem 0; }
+        .empty-state .icon { font-size: 2.8rem; margin-bottom: .5rem; }
 
-        /* ── Empty state ─────────────────────────────────────────────── */
-        .empty-state { text-align: center; color: var(--text-muted); padding: 3rem 0; }
-        .empty-state .icon { font-size: 3rem; margin-bottom: .75rem; }
-
-        .tip-box { background: rgba(234,179,8,.07); border: 1px solid rgba(234,179,8,.2); border-radius: 12px; padding: .85rem 1rem; font-size: .83rem; color: var(--warning); line-height: 1.6; }
+        /* ── Hint box ────────────────────────────────────────────────── */
+        .hint-box { background: rgba(6,182,212,.06); border: 1px dashed rgba(6,182,212,.25); border-radius: 12px; padding: .85rem 1rem; font-size: .83rem; color: var(--secondary); line-height: 1.6; text-align: center; margin-bottom: 1.25rem; }
     </style>
 </head>
 <body>
@@ -75,30 +103,39 @@
     <div class="orb orb-yellow"></div>
 </div>
 
-<div class="container glass-panel form-layout" style="max-width:700px;">
+<div class="container glass-panel form-layout" style="max-width:680px;">
     <nav class="top-nav">
         <a href="index.html" class="back-link">← Back</a>
         <h1 class="logo">Hop<span>Drop</span></h1>
     </nav>
     <div id="user-bar"></div>
 
-    <div class="form-header">
-        <h2>Track Your Packages</h2>
-        <p>Packages being delivered to you are shown below, auto-loaded from your account.</p>
+    <div class="track-hero">
+        <h2>🎁 Track Your Package</h2>
+        <p>Enter the Package ID sent to you via WhatsApp by the sender.</p>
     </div>
 
-    <div class="search-row" id="search-row" style="display:none;">
-        <div class="form-group">
-            <label for="receiver-phone">Your Phone Number</label>
-            <input type="tel" id="receiver-phone" placeholder="e.g. 9123456789" maxlength="10">
-        </div>
-        <button class="btn-search" id="search-btn" onclick="searchPackages()">🔍 Find My Packages</button>
+    <!-- ── Package ID input (primary) ───────────────────────────────── -->
+    <div class="track-row">
+        <input type="text" id="pkg-id-input"
+            placeholder="e.g. A1B2C3D4"
+            maxlength="8"
+            autocomplete="off"
+            oninput="this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')"
+        >
+        <button class="btn-track" id="track-btn" onclick="trackById()">🔍 Track</button>
     </div>
 
-    <div class="tip-box" style="margin-bottom:1.5rem;">
-        💡 Your phone number must match what the sender entered when creating the package.
+    <div class="hint-box">
+        💬 The Package ID was sent to you over WhatsApp when the sender created the package.
     </div>
 
+    <!-- ── "View all my packages" secondary button ──────────────────── -->
+    <button class="all-pkgs-btn" id="all-pkgs-btn" onclick="loadAllMyPackages()">
+        📋 View all packages linked to my account
+    </button>
+
+    <!-- ── Results ──────────────────────────────────────────────────── -->
     <div id="results-area"></div>
 </div>
 
@@ -106,146 +143,150 @@
 <script>
 const API = 'http://127.0.0.1:5000';
 
-// Session check
+/* ── Session ──────────────────────────────────────────────────────────── */
 const session = hdRequire('Receiver');
 if (session) hdBar('user-bar');
 
-async function searchPackages() {
-    const phone = document.getElementById('receiver-phone').value.trim();
-    const btn   = document.getElementById('search-btn');
+/* ── Track by Package ID ─────────────────────────────────────────────── */
+async function trackById() {
+    const pkgId = document.getElementById('pkg-id-input').value.trim().toUpperCase();
+    const btn   = document.getElementById('track-btn');
     const area  = document.getElementById('results-area');
 
-    if (!phone || phone.length < 10) {
-        area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Please enter a valid 10-digit phone number.</p></div>`;
+    if (!pkgId || pkgId.length < 4) {
+        area.innerHTML = `<div class="empty-state"><div class="icon">⚠️</div><p>Please enter a valid Package ID.</p></div>`;
         return;
     }
 
-    btn.disabled = true; btn.textContent = 'Searching…';
-    area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Looking up your packages…</p></div>`;
+    btn.disabled = true; btn.textContent = 'Tracking…';
+    area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Looking up package <strong>${pkgId}</strong>…</p></div>`;
 
     try {
-        const res = await fetch(`${API}/receiver-packages?phone=${encodeURIComponent(phone)}`);
-        if (!res.ok) throw new Error();
-        const pkgs = await res.json();
+        const res = await fetch(`${API}/package/${pkgId}`);
+        if (res.status === 404) {
+            area.innerHTML = `<div class="empty-state"><div class="icon">❌</div>
+                <p>No package found with ID <strong>${pkgId}</strong>.<br>
+                Double-check the ID in your WhatsApp message.</p></div>`;
+        } else if (!res.ok) {
+            throw new Error(`Server error ${res.status}`);
+        } else {
+            const pkg = await res.json();
+            area.innerHTML = renderCard(pkg);
+        }
+    } catch (err) {
+        area.innerHTML = `<div class="empty-state"><div class="icon">❌</div>
+            <p>Cannot reach the server.<br>Make sure Flask is running on port 5000.</p></div>`;
+    }
+
+    btn.disabled = false; btn.textContent = '🔍 Track';
+}
+
+/* ── Load all packages for session phone ─────────────────────────────── */
+async function loadAllMyPackages() {
+    const area = document.getElementById('results-area');
+    const btn  = document.getElementById('all-pkgs-btn');
+
+    if (!session) {
+        area.innerHTML = `<div class="empty-state"><div class="icon">🔒</div><p>Please log in to see your packages.</p></div>`;
+        return;
+    }
+
+    btn.disabled = true; btn.textContent = 'Loading…';
+    area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Loading packages for ${session.phone}…</p></div>`;
+
+    try {
+        const res  = await fetch(`${API}/receiver-packages?phone=${encodeURIComponent(session.phone)}`);
+        const pkgs = res.ok ? await res.json() : [];
 
         if (!pkgs.length) {
-            area.innerHTML = `<div class="empty-state">
-                <div class="icon">📭</div>
-                <p>No packages found for <strong>${phone}</strong>.<br>
-                Make sure the sender entered your phone number correctly.</p>
-            </div>`;
+            area.innerHTML = `<div class="empty-state"><div class="icon">📭</div>
+                <p>No packages linked to your phone <strong>${session.phone}</strong>.<br>
+                Use the Package ID from WhatsApp to track specific packages.</p></div>`;
         } else {
             area.innerHTML = `
-                <p style="color:var(--text-muted); font-size:.88rem; margin-bottom:1rem;">
-                    Found <strong style="color:var(--text);">${pkgs.length}</strong> package(s) for ${phone}
+                <p style="color:var(--text-muted);font-size:.88rem;margin-bottom:1rem;">
+                    Found <strong style="color:var(--text);">${pkgs.length}</strong> package(s) for ${session.phone}
                 </p>
                 ${pkgs.map(renderCard).join('')}`;
         }
-    } catch {
-        area.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>Can't reach the server.<br>Make sure Flask is running on port 5000.</p></div>`;
+    } catch(err) {
+        area.innerHTML = `<div class="empty-state"><div class="icon">❌</div><p>Cannot reach the server.</p></div>`;
     }
 
-    btn.disabled = false; btn.textContent = '🔍 Find My Packages';
+    btn.disabled = false; btn.textContent = '📋 View all packages linked to my account';
 }
 
-function getTimeline(status) {
-    const steps = [
-        { key: 'pending',   label: 'Created', icon: '📦' },
+/* ── Timeline HTML ────────────────────────────────────────────────────── */
+function timeline(status) {
+    const steps  = [
+        { key: 'pending',   label: 'Created',  icon: '📦' },
         { key: 'accepted',  label: 'Picked Up', icon: '🚗' },
         { key: 'delivered', label: 'Delivered', icon: '🎁' },
     ];
-    const order = { pending: 0, accepted: 1, delivered: 2 };
+    const order   = { pending: 0, accepted: 1, delivered: 2 };
     const current = order[status] ?? 0;
-
     let html = '<div class="timeline">';
-    steps.forEach((step, i) => {
-        const stepOrder = order[step.key];
-        const isDone   = stepOrder < current;
-        const isActive = stepOrder === current;
-        const dotCls   = isDone ? 'done' : isActive ? 'active' : '';
-        const lblCls   = isDone ? 'done' : isActive ? 'active' : '';
+    steps.forEach((s, i) => {
+        const o      = order[s.key];
+        const done   = o < current;
+        const active = o === current;
         html += `<div class="tl-step">
-            <div class="tl-dot ${dotCls}">${step.icon}</div>
-            <div class="tl-label ${lblCls}">${step.label}</div>
+            <div class="tl-dot ${done?'done':active?'active':''}">${s.icon}</div>
+            <div class="tl-label ${done?'done':active?'active':''}">${s.label}</div>
         </div>`;
-        if (i < steps.length - 1) {
-            html += `<div class="tl-line ${isDone ? 'done' : ''}"></div>`;
-        }
+        if (i < steps.length - 1)
+            html += `<div class="tl-line ${done?'done':''}"></div>`;
     });
-    html += '</div>';
-    return html;
+    return html + '</div>';
 }
 
+/* ── Render a package card ────────────────────────────────────────────── */
 function renderCard(p) {
-    const sCls = { pending: 's-pending', accepted: 's-accepted', delivered: 's-delivered' }[p.status] || 's-pending';
+    const sCls = { pending:'sp-pending', accepted:'sp-accepted', delivered:'sp-delivered' }[p.status] || 'sp-pending';
 
-    // Proof photos section
     const proofHtml = `
     <div class="proof-photos">
         <div class="proof-item">
-            <label>📦 Package (by Sender)</label>
-            ${p.package_photo
-                ? `<img src="${p.package_photo}" alt="Package photo">`
-                : `<div class="proof-placeholder">Not taken</div>`}
+            <label>📦 Package photo</label>
+            ${p.package_photo ? `<img src="${p.package_photo}" alt="Package">` : `<div class="proof-ph">Not taken</div>`}
         </div>
         <div class="proof-item">
-            <label>🚗 Pickup (by Traveller)</label>
-            ${p.pickup_photo
-                ? `<img src="${p.pickup_photo}" alt="Pickup photo">`
-                : `<div class="proof-placeholder">Not yet taken</div>`}
+            <label>🚗 Pickup proof</label>
+            ${p.pickup_photo  ? `<img src="${p.pickup_photo}"  alt="Pickup">` : `<div class="proof-ph">Pending pickup</div>`}
         </div>
         <div class="proof-item">
-            <label>✅ Delivery Proof</label>
-            ${p.delivery_photo
-                ? `<img src="${p.delivery_photo}" alt="Delivery photo">`
-                : `<div class="proof-placeholder">Pending delivery</div>`}
+            <label>✅ Delivery proof</label>
+            ${p.delivery_photo? `<img src="${p.delivery_photo}" alt="Delivery">`: `<div class="proof-ph">Pending delivery</div>`}
         </div>
     </div>`;
 
+    const deliveredBanner = p.status === 'delivered' ? `
+    <div class="delivered-banner">
+        ✅ <strong>Your package has been delivered!</strong><br>
+        Check the delivery proof photo above for confirmation.
+    </div>` : '';
+
     return `
-    <div class="pkg-card" id="pkg-${p.id}">
+    <div class="pkg-card">
         <div class="pkg-card-top">
-            <span class="pkg-id">PKG # ${p.id}</span>
-            <span class="status-pill ${sCls}">${p.status}</span>
+            <span class="pkg-id-tag">PKG # ${p.id}</span>
+            <span class="sp ${sCls}">${p.status}</span>
         </div>
-
-        ${getTimeline(p.status)}
-
+        ${timeline(p.status)}
         <div class="info-row"><span>📍 From:</span> ${p.sender_address}</div>
         <div class="info-row"><span>🏁 To:</span> ${p.receiver_address}</div>
         ${p.description ? `<div class="info-row"><span>📋 Item:</span> ${p.description}</div>` : ''}
         ${p.accepted_by  ? `<div class="info-row"><span>🚗 Traveller:</span> ${p.accepted_by}</div>` : ''}
-        <div class="info-row"><span>💰 Reward:</span> ₹${parseFloat(p.reward).toFixed(2)}</div>
-
         ${proofHtml}
-
-        ${p.status === 'delivered' ? `
-        <div style="background:rgba(34,197,94,.07); border:1px solid rgba(34,197,94,.25); border-radius:12px; padding:.85rem; margin-top:.75rem; font-size:.88rem;">
-            ✅ Your package has been delivered! Check the delivery proof photo above.
-        </div>` : ''}
+        ${deliveredBanner}
     </div>`;
 }
 
-// Auto-load on page open using session phone
+/* ── Enter key on input ───────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-    if (session) {
-        // Pre-fill phone from session and auto-search
-        const phoneEl = document.getElementById('receiver-phone');
-        if (phoneEl) {
-            phoneEl.value = session.phone;
-            phoneEl.readOnly = true;
-            phoneEl.style.opacity = '.7';
-        }
-        searchPackages();
-    } else {
-        // If no session, show the search row so user can enter phone manually
-        document.getElementById('search-row').style.display = 'flex';
-    }
-
-    const phoneInput = document.getElementById('receiver-phone');
-    if (phoneInput) {
-        phoneInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchPackages(); });
-    }
+    document.getElementById('pkg-id-input').addEventListener('keydown', e => {
+        if (e.key === 'Enter') trackById();
+    });
 });
 </script>
 </body>
