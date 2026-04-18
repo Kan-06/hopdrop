@@ -1,6 +1,24 @@
 /**
  * Script for sender.html (Nominatim API autocomplete & validation)
+ * Location restricted to the Mangaluru–Karkala region.
  */
+
+// Bounding box for the Mangaluru–Karkala region (SW corner, NE corner)
+const REGION_BOUNDS = {
+    minLat: 12.80,
+    maxLat: 13.35,
+    minLon: 74.70,
+    maxLon: 75.15,
+    // Nominatim viewbox format: left,top,right,bottom (lon,lat,lon,lat)
+    viewbox: '74.70,13.35,75.15,12.80'
+};
+
+function isWithinRegion(lat, lon) {
+    return (
+        lat >= REGION_BOUNDS.minLat && lat <= REGION_BOUNDS.maxLat &&
+        lon >= REGION_BOUNDS.minLon && lon <= REGION_BOUNDS.maxLon
+    );
+}
 
 class AddressInput {
     constructor(inputId, suggestionsId, statusId) {
@@ -44,13 +62,20 @@ class AddressInput {
 
     async fetchSuggestions(query) {
         try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=5`);
+            // Restrict search to Mangaluru–Karkala region using viewbox + bounded
+            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=10&viewbox=${REGION_BOUNDS.viewbox}&bounded=1&countrycodes=in`;
+            const res = await fetch(url);
             const data = await res.json();
 
             this.suggestionsBox.innerHTML = '';
+
+            // Secondary client-side filter: discard results outside the bounding box
+            const filtered = data.filter(item =>
+                isWithinRegion(parseFloat(item.lat), parseFloat(item.lon))
+            );
             
-            if (data.length > 0) {
-                data.forEach(item => {
+            if (filtered.length > 0) {
+                filtered.forEach(item => {
                     const div = document.createElement('div');
                     div.className = 'suggestion-item';
                     div.textContent = item.display_name;
@@ -61,7 +86,7 @@ class AddressInput {
                 this.statusBadge.textContent = "Select from list";
             } else {
                 this.suggestionsBox.classList.add('hidden');
-                this.statusBadge.textContent = "No results";
+                this.statusBadge.textContent = "Outside service area";
             }
         } catch (e) {
             console.error("Autocomplete error", e);
