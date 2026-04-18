@@ -7,8 +7,6 @@
     <meta name="description" content="Sign in to HopDrop — Next-Generation Peer-to-Peer Delivery Platform">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
-    <!-- Google Identity Services -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="animated-bg">
@@ -23,47 +21,66 @@
             <p class="subtitle">Next-Generation Peer-to-Peer Delivery</p>
         </header>
 
-        <div class="google-auth-container">
-            <div class="auth-divider-text">Welcome! Sign in to continue</div>
-
-        <div class="auth-forms-container">
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form active">
-                <div class="form-header">
-                    <h2>Welcome Back</h2>
-                    <p>Enter your details to access your dashboard.</p>
-                </div>
-                <div class="form-group">
-                    <label for="login-email">Email Address</label>
-                    <input type="email" id="login-email" placeholder="you@domain.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" placeholder="Enter your password" required>
-                </div>
-                <div class="form-message hidden" id="login-msg"></div>
-                <button type="submit" class="primary-btn">Sign In</button>
-                
-                <div class="divider"><span>OR</span></div>
-                
-                <button type="button" class="google-btn" id="google-login">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo">
-                    Sign in with Google
-                </button>
-            </form>
-
-            <p class="auth-note">
-                New users are automatically registered on first sign-in.<br>
-                Your Google account keeps your data secure.
-            </p>
-
-            <div class="form-message hidden" id="auth-msg"></div>
+        <!-- Tabs -->
+        <div class="auth-tabs">
+            <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Sign In</button>
+            <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
         </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active">
+            <div class="form-group">
+                <label for="login-email">Email Address</label>
+                <input type="email" id="login-email" placeholder="you@domain.com" required>
+            </div>
+            <div class="form-group">
+                <label for="login-password">Password</label>
+                <input type="password" id="login-password" placeholder="Enter your password" required>
+            </div>
+            <div class="form-message hidden" id="login-msg"></div>
+            <button type="submit" class="primary-btn">Sign In</button>
+            
+            <div class="divider"><span>OR</span></div>
+            
+            <button type="button" class="google-btn" id="google-login">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo">
+                Sign in with Google
+            </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form hidden">
+            <div class="form-group">
+                <label for="register-name">Full Name</label>
+                <input type="text" id="register-name" placeholder="Your full name" required>
+            </div>
+            <div class="form-group">
+                <label for="register-email">Email Address</label>
+                <input type="email" id="register-email" placeholder="you@domain.com" required>
+            </div>
+            <div class="form-group">
+                <label for="register-password">Password</label>
+                <input type="password" id="register-password" placeholder="Create a password" required>
+            </div>
+            <div class="form-group">
+                <label for="register-confirm-password">Confirm Password</label>
+                <input type="password" id="register-confirm-password" placeholder="Confirm your password" required>
+            </div>
+            <div class="form-message hidden" id="register-msg"></div>
+            <button type="submit" class="primary-btn">Create Account</button>
+
+            <div class="divider"><span>OR</span></div>
+
+            <button type="button" class="google-btn" id="google-register">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo">
+                Sign up with Google
+            </button>
+        </form>
     </div>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
     <script src="session.js"></script>
     <script src="auth.js"></script>
 </body>
