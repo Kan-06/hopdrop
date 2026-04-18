@@ -83,6 +83,23 @@
             transition: all .2s;
         }
         .copy-btn:hover { background: rgba(34,197,94,.25); }
+
+        /* ── Tabs & Tracking ─────────────────────────────────────────── */
+        .tab-bar { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,.1); }
+        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; cursor: pointer; padding: .5rem 1rem; transition: .2s; margin-bottom: -1px; }
+        .tab-btn.active { color: var(--secondary); border-bottom: 2px solid var(--secondary); }
+        .tab-btn:hover:not(.active) { color: white; border-bottom: 2px solid rgba(255,255,255,.2); }
+        
+        .pkg-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; text-align: left; }
+        .pkg-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .pkg-id { font-family: monospace; font-size: 1.1rem; color: var(--secondary); }
+        .status-badge { padding: .3rem .6rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
+        .status-pending { background: rgba(234,179,8,.15); color: #facc15; }
+        .status-accepted { background: rgba(59,130,246,.15); color: #60a5fa; }
+        .status-delivered { background: rgba(34,197,94,.15); color: #4ade80; }
+        .status-paid { background: rgba(168,85,247,.15); color: #c084fc; }
+        .pay-btn { background: var(--success); color: #111; padding: .5rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; margin-top: 1rem; width: 100%; transition: .2s; }
+        .pay-btn:hover { background: #22c55e; }
     </style>
 </head>
 <body>
@@ -97,6 +114,13 @@
             <a href="index.html" class="back-link">← Back</a>
             <h1 class="logo">Hop<span>Drop</span></h1>
         </nav>
+        <div id="user-bar"></div>
+
+        <!-- ── Tabs ─────────────────────────────────────────────────── -->
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-create" onclick="switchTab('create')">Send Package</button>
+            <button class="tab-btn" id="tab-track" onclick="switchTab('track')">Track & Pay</button>
+        </div>
 
         <!-- ── Form ─────────────────────────────────────────────────── -->
         <div id="form-section">
@@ -192,23 +216,74 @@
             <div class="success-card">
                 <div style="font-size:3rem; margin-bottom:.5rem;">🎉</div>
                 <h2 style="margin-bottom:.5rem;">Package Created!</h2>
-                <p style="color:var(--text-muted); margin-bottom:1rem;">Your Package ID is:</p>
+                <p style="color:var(--text-muted); margin-bottom:.5rem;">Package ID:</p>
                 <div class="pkg-id-display" id="pkg-id-display">——</div>
-                <button class="copy-btn" id="copy-btn" onclick="copyId()">📋 Copy ID</button>
-                <p style="color:var(--text-muted); font-size:.83rem; margin-top:1rem;">
-                    Share this ID with the receiver so they can track the package.
+
+                <!-- WhatsApp notify receiver -->
+                <div id="wa-receiver-wrap" style="margin-top:1rem;"></div>
+
+                <p style="color:var(--text-muted); font-size:.82rem; margin-top:.75rem;">
+                    The receiver will get the package ID and tracking link via WhatsApp.
                 </p>
             </div>
             <button class="primary-btn" style="margin-top:1.5rem;" onclick="resetForm()">➕ Send Another Package</button>
-            <a href="index.html" class="back-link" style="display:block; text-align:center; margin-top:1rem;">← Back to Home</a>
+        </div>
+
+        <!-- ── Track & Pay Section ───────────────────────────────────── -->
+        <div id="track-section" class="hidden">
+            <div class="form-header">
+                <h2>My Packages</h2>
+                <p>Track your sent packages and complete payment upon delivery.</p>
+            </div>
+            <div class="form-group">
+                <input type="tel" id="track_phone" placeholder="Enter your phone number (e.g. 9876543210)" maxlength="10">
+            </div>
+            <button class="primary-btn" onclick="fetchSenderPackages()">🔍 Find My Packages</button>
+            <div id="track-msg" class="form-message hidden" style="margin-top:1rem;"></div>
+            <div id="pkg-list" style="margin-top:2rem;"></div>
+            <div id="payment-success-modal" class="hidden" style="margin-top:2rem; text-align:center; padding:2rem; background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.3); border-radius:12px;">
+                <div style="font-size:3rem;">💸</div>
+                <h2 style="margin:1rem 0;">Payment Complete!</h2>
+                <p>You paid <strong id="paid-total" style="color:var(--secondary)"></strong>.</p>
+                <p style="font-size:.9rem; color:var(--text-muted); margin-top:.5rem;">
+                    <span id="paid-traveller"></span> transferred to the Traveller.<br>
+                    <span id="paid-hopdrop"></span> service fee for HopDrop.
+                </p>
+                <button class="primary-btn" style="margin-top:1.5rem;" onclick="document.getElementById('payment-success-modal').classList.add('hidden')">Close</button>
+            </div>
         </div>
     </div>
 
+    <script src="session.js"></script>
     <script src="autocomplete.js"></script>
     <script>
         const API = 'http://127.0.0.1:5000';
         let packagePhotoB64 = '';
-        let createdPkgId = '';
+        let createdPkgId    = '';
+        let savedReceiverPhone = '';
+        let savedReceiverName  = '';
+        let savedSenderName    = '';
+
+        // ── Session check ───────────────────────────────────────────────
+        const session = hdRequire('Sender');
+        if (session) {
+            hdBar('user-bar');
+            // Pre-fill sender fields from account
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('sender_name').value = session.name;
+                document.getElementById('sender_name').readOnly = true;
+                document.getElementById('phone').value = session.phone;
+                document.getElementById('sender_name').style.opacity = '.7';
+                document.getElementById('phone').style.opacity = '.7';
+                
+                const trackPhone = document.getElementById('track_phone');
+                if (trackPhone) {
+                    trackPhone.value = session.phone;
+                    trackPhone.readOnly = true;
+                    trackPhone.style.opacity = '.7';
+                }
+            });
+        }
 
         // ── Address Autocomplete setup ──────────────────────────────────
         const acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
@@ -264,10 +339,35 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    createdPkgId = data.package_id;
+                    createdPkgId       = data.package_id;
+                    savedReceiverPhone = payload.receiver_phone;
+                    savedReceiverName  = payload.receiver_name || 'there';
+                    savedSenderName    = payload.sender_name;
+
                     document.getElementById('pkg-id-display').textContent = createdPkgId;
                     document.getElementById('form-section').classList.add('hidden');
                     document.getElementById('success-section').classList.remove('hidden');
+
+                    // Build WhatsApp button for receiver
+                    const waWrap = document.getElementById('wa-receiver-wrap');
+                    if (savedReceiverPhone) {
+                        const trackUrl = 'http://127.0.0.1:5000/receiver.html';
+                        const waMsg = `Hi ${savedReceiverName}! 📦\n${savedSenderName} has sent you a package via HopDrop.\n\nPackage ID: ${createdPkgId}\nTrack your delivery at: ${trackUrl}\n\n(Log in as Receiver using your phone number to see updates & proof photos)`;
+                        const waUrl = `https://wa.me/91${savedReceiverPhone}?text=${encodeURIComponent(waMsg)}`;
+                        waWrap.innerHTML = `
+                            <a href="${waUrl}" target="_blank"
+                               style="display:inline-flex;align-items:center;gap:.5rem;
+                                      background:#25d366;color:white;border:none;
+                                      padding:.7rem 1.4rem;border-radius:12px;
+                                      font-weight:700;font-size:.95rem;
+                                      text-decoration:none;transition:filter .2s;"
+                               onmouseover="this.style.filter='brightness(1.1)'"
+                               onmouseout="this.style.filter='none'">
+                                💬 Notify Receiver on WhatsApp
+                            </a>`;
+                    } else {
+                        waWrap.innerHTML = `<p style="font-size:.83rem;color:var(--text-muted);">⚠ No receiver phone entered — they cannot be notified via WhatsApp.</p>`;
+                    }
                 } else {
                     showMsg(data.error || 'Failed to create package.', 'error');
                 }
@@ -284,13 +384,6 @@
             msg.className = `form-message ${type}`;
         }
 
-        function copyId() {
-            navigator.clipboard.writeText(createdPkgId).then(() => {
-                const btn = document.getElementById('copy-btn');
-                btn.textContent = '✅ Copied!';
-                setTimeout(() => btn.textContent = '📋 Copy ID', 2000);
-            });
-        }
 
         function resetForm() {
             document.getElementById('sender-form').reset();
@@ -301,7 +394,116 @@
             document.getElementById('receiver_address-badge').textContent = 'Type to search';
             document.getElementById('receiver_address-badge').className = 'addr-badge';
             document.getElementById('success-section').classList.add('hidden');
+            document.getElementById('track-section').classList.add('hidden');
             document.getElementById('form-section').classList.remove('hidden');
+        }
+
+        function switchTab(tab) {
+            if (tab === 'create') {
+                document.getElementById('tab-create').classList.add('active');
+                document.getElementById('tab-track').classList.remove('active');
+                document.getElementById('form-section').classList.remove('hidden');
+                document.getElementById('track-section').classList.add('hidden');
+                document.getElementById('success-section').classList.add('hidden');
+            } else {
+                document.getElementById('tab-track').classList.add('active');
+                document.getElementById('tab-create').classList.remove('active');
+                document.getElementById('form-section').classList.add('hidden');
+                document.getElementById('success-section').classList.add('hidden');
+                document.getElementById('track-section').classList.remove('hidden');
+                
+                if (session && document.getElementById('track_phone').value) {
+                    fetchSenderPackages();
+                }
+            }
+        }
+
+        async function fetchSenderPackages() {
+            const phone = document.getElementById('track_phone').value.trim();
+            const msg = document.getElementById('track-msg');
+            const list = document.getElementById('pkg-list');
+            document.getElementById('payment-success-modal').classList.add('hidden');
+
+            msg.className = 'form-message hidden';
+            list.innerHTML = '';
+
+            if (phone.length < 10) {
+                msg.textContent = 'Please enter a valid phone number.';
+                msg.className = 'form-message error';
+                return;
+            }
+            msg.textContent = 'Fetching…';
+            msg.className = 'form-message';
+            try {
+                const res = await fetch(`${API}/sender-packages?phone=${phone}`);
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.error);
+                
+                msg.className = 'form-message hidden';
+                if (data.length === 0) {
+                    list.innerHTML = '<p style="text-align:center; color:var(--text-muted);">No packages found for this phone.</p>';
+                    return;
+                }
+                data.forEach(p => {
+                    const el = document.createElement('div');
+                    el.className = 'pkg-card';
+                    
+                    let payBtn = '';
+                    if (p.status === 'delivered') {
+                        payBtn = `<button class="pay-btn" onclick="payPackage('${p.id}', ${p.reward})">💳 Pay ₹${p.reward}</button>`;
+                    }
+                    
+                    el.innerHTML = `
+                        <div class="pkg-card-header">
+                            <span class="pkg-id">#${p.id}</span>
+                            <span class="status-badge status-${p.status}">${p.status}</span>
+                        </div>
+                        <div style="font-size:.9rem; color:var(--text-muted); margin-bottom:.5rem;">
+                            <strong>To:</strong> ${p.receiver_name} <br>
+                            <strong>Dest:</strong> ${p.receiver_address}
+                        </div>
+                        <div style="font-size:.9rem; color:var(--text-muted);">
+                            <strong>Item:</strong> ${p.description || 'N/A'} <br>
+                            <strong>Reward:</strong> ₹${p.reward}
+                        </div>
+                        ${payBtn}
+                    `;
+                    list.appendChild(el);
+                });
+            } catch(e) {
+                msg.textContent = e.message || 'Network error.';
+                msg.className = 'form-message error';
+            }
+        }
+
+        async function payPackage(pkgId, amount) {
+            const btn = event.target;
+            btn.textContent = 'Processing...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API}/pay-package`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ package_id: pkgId })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    alert(data.error || 'Payment failed.');
+                    btn.textContent = '💳 Pay';
+                    btn.disabled = false;
+                    return;
+                }
+                document.getElementById('payment-success-modal').classList.remove('hidden');
+                document.getElementById('paid-total').textContent = `₹${amount}`;
+                document.getElementById('paid-traveller').textContent = `₹${data.traveller_earned}`;
+                document.getElementById('paid-hopdrop').textContent = `₹${data.platform_fee}`;
+                fetchSenderPackages(); // Refresh block
+                document.getElementById('payment-success-modal').classList.remove('hidden');
+            } catch(e) {
+                alert('Network error.');
+                btn.textContent = '💳 Pay';
+                btn.disabled = false;
+            }
         }
     </script>
 </body>

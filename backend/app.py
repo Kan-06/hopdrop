@@ -1,6 +1,6 @@
 """
-HopDrop — Flask Backend (v2)
-In-memory store. No auth, no Firebase, no external APIs.
+HopDrop — Flask Backend (v3)
+Added: /register and /login endpoints with in-memory user store.
 """
 
 from flask import Flask, request, jsonify
@@ -12,7 +12,7 @@ CORS(app)
 
 # ── In-memory storage ──────────────────────────────────────────────────────────
 packages = {}   # id -> package dict
-users = {}      # name -> { "wallet_balance": float, "locked_balance": float, "transactions": list }
+users = {}      # name or phone -> { "wallet_balance": float, "locked_balance": float, "transactions": list, ... auth fields }
 LOCK_AMOUNT = 50.0  # ₹50 deposit required to accept a package
 # ──────────────────────────────────────────────────────────────────────────────
 
@@ -57,45 +57,86 @@ def verify_identity():
     return jsonify({'message': 'Identity Verified Successfully!'})
 
 
-# ── 1. Create Package ──────────────────────────────────────────────────────────
+# ── Auth: Register ─────────────────────────────────────────────────────────────
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    for field in ['name', 'phone', 'password', 'role']:
+        if not data.get(field):
+            return jsonify({'error': f'Missing field: {field}'}), 400
+
+    phone = data['phone'].strip()
+    if phone in users:
+        return jsonify({'error': 'Phone already registered. Please sign in.'}), 409
+
+    users[phone] = {
+        'name':     data['name'].strip(),
+        'phone':    phone,
+        'password': data['password'],
+        'role':     data['role'],
+    }
+    return jsonify({
+        'message': 'Registered successfully!',
+        'user': {'name': users[phone]['name'], 'phone': phone, 'role': data['role']}
+    }), 201
+
+
+# ── Auth: Login ────────────────────────────────────────────────────────────────
+@app.route('/login', methods=['POST'])
+def login():
+    data     = request.get_json()
+    phone    = data.get('phone', '').strip()
+    password = data.get('password', '').strip()
+    role     = data.get('role', '').strip()
+
+    if not phone or not password:
+        return jsonify({'error': 'Phone and password are required.'}), 400
+
+    user = users.get(phone)
+    if not user:
+        return jsonify({'error': 'Account not found. Please register first.'}), 404
+    if user['password'] != password:
+        return jsonify({'error': 'Incorrect password.'}), 401
+    if role and user['role'].lower() != role.lower():
+        return jsonify({'error': f'This account is registered as a {user["role"]}. Please select the correct role.'}), 403
+
+    return jsonify({'message': 'Logged in!',
+                    'user': {'name': user['name'], 'phone': user['phone'], 'role': user['role']}})
+
+
+# ── Create Package ─────────────────────────────────────────────────────────────
 @app.route('/create-package', methods=['POST'])
 def create_package():
     data = request.get_json()
-    required = ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward']
-    for field in required:
+    for field in ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward']:
         if not data.get(field):
             return jsonify({'error': f'Missing field: {field}'}), 400
 
     pkg_id = str(uuid.uuid4())[:8].upper()
     packages[pkg_id] = {
         'id':               pkg_id,
-        # Sender
         'sender_name':      data['sender_name'],
         'phone':            data['phone'],
         'sender_address':   data['sender_address'],
         'sender_lat':       data.get('sender_lat'),
         'sender_lng':       data.get('sender_lng'),
-        # Receiver
         'receiver_name':    data.get('receiver_name', ''),
         'receiver_phone':   data.get('receiver_phone', ''),
         'receiver_address': data['receiver_address'],
         'receiver_lat':     data.get('receiver_lat'),
         'receiver_lng':     data.get('receiver_lng'),
-        # Package
         'description':      data.get('description', ''),
         'reward':           float(data['reward']),
-        'package_photo':    data.get('package_photo', ''),   # base64 taken by sender
-        # Status
+        'package_photo':    data.get('package_photo', ''),
         'status':           'pending',
         'accepted_by':      None,
-        # Proof photos
-        'pickup_photo':     '',    # taken by traveller at pickup
-        'delivery_photo':  '',    # taken by traveller on delivery
+        'pickup_photo':     '',
+        'delivery_photo':   '',
     }
     return jsonify({'package_id': pkg_id, 'message': 'Package created successfully'}), 201
 
 
-# ── 2. Match Packages (all pending, safe view) ─────────────────────────────────
+# ── Match Packages (pending) ───────────────────────────────────────────────────
 @app.route('/match-packages', methods=['GET'])
 def match_packages():
     route = request.args.get('route', '').lower().strip()
@@ -119,7 +160,7 @@ def match_packages():
     return jsonify(result)
 
 
-# ── 3. Accept Package ──────────────────────────────────────────────────────────
+# ── Accept Package ─────────────────────────────────────────────────────────────
 @app.route('/accept-package', methods=['POST'])
 def accept_package():
     data = request.get_json()
@@ -128,7 +169,6 @@ def accept_package():
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
-
     pkg = packages[pkg_id]
     if pkg['status'] != 'pending':
         return jsonify({'error': f"Package is already {pkg['status']}"}), 400
@@ -147,7 +187,6 @@ def accept_package():
 
     pkg['status']      = 'accepted'
     pkg['accepted_by'] = traveller_name
-
     if data.get('pickup_photo'):
         pkg['pickup_photo'] = data['pickup_photo']
 
@@ -160,6 +199,7 @@ def accept_package():
         'receiver_phone':   pkg['receiver_phone'],
         'receiver_address': pkg['receiver_address'],
         'description':      pkg['description'],
+        'package_id':       pkg_id,
     })
 
 
@@ -193,13 +233,12 @@ def pickup_package():
 # ── 4. Complete Delivery (Traveller -> Receiver OTP) ───────────────────────────
 @app.route('/complete-delivery', methods=['POST'])
 def complete_delivery():
-    data = request.get_json()
+    data   = request.get_json()
     pkg_id = data.get('package_id', '').upper()
     otp = data.get('otp', '9876')
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
-
     pkg = packages[pkg_id]
     if pkg['status'] == 'delivered':
         return jsonify({'error': 'Already delivered'}), 400
@@ -229,12 +268,9 @@ def complete_delivery():
         # Add earnings
         user['wallet_balance'] += traveller_earned
         user['transactions'].append(f'Earned ₹{traveller_earned} from package {pkg_id}')
-
     return jsonify({
-        'message':          'Delivery completed! 🎉',
+        'message':          'Delivery confirmed! Waiting for Sender to complete the payment. 💸',
         'reward':           reward,
-        'traveller_earned': traveller_earned,
-        'platform_fee':     platform_fee,
     })
 
 
@@ -276,8 +312,7 @@ def cancel_delivery():
 def receiver_packages():
     phone = request.args.get('phone', '').strip()
     if not phone:
-        return jsonify({'error': 'phone query param required'}), 400
-
+        return jsonify({'error': 'phone param required'}), 400
     result = []
     for p in packages.values():
         if p.get('receiver_phone') == phone:
@@ -297,7 +332,58 @@ def receiver_packages():
     return jsonify(result)
 
 
-# ── 6. Single package (for tracking by ID) ────────────────────────────────────
+# ── Sender: lookup packages by phone ───────────────────────────────────────────
+@app.route('/sender-packages', methods=['GET'])
+def sender_packages():
+    phone = request.args.get('phone', '').strip()
+    if not phone:
+        return jsonify({'error': 'phone query param required'}), 400
+
+    result = []
+    for p in packages.values():
+        if p.get('phone') == phone:
+            result.append({
+                'id':               p['id'],
+                'receiver_name':    p['receiver_name'],
+                'receiver_address': p['receiver_address'],
+                'description':      p['description'],
+                'reward':           p['reward'],
+                'status':           p['status'],
+                'accepted_by':      p.get('accepted_by', ''),
+                'package_photo':    p.get('package_photo', ''),
+                'pickup_photo':     p.get('pickup_photo', ''),
+                'delivery_photo':   p.get('delivery_photo', ''),
+            })
+    return jsonify(result)
+
+# ── Pay for Package ────────────────────────────────────────────────────────────
+@app.route('/pay-package', methods=['POST'])
+def pay_package():
+    data = request.get_json()
+    pkg_id = data.get('package_id', '').upper()
+    
+    if pkg_id not in packages:
+        return jsonify({'error': 'Package not found'}), 404
+        
+    pkg = packages[pkg_id]
+    if pkg['status'] == 'paid':
+        return jsonify({'error': 'Already paid'}), 400
+    if pkg['status'] != 'delivered':
+        return jsonify({'error': 'Package is not delivered yet'}), 400
+        
+    pkg['status'] = 'paid'
+    reward = pkg['reward']
+    traveller_earned = round(reward * 0.80, 2)
+    platform_fee = round(reward * 0.20, 2)
+    
+    return jsonify({
+        'message': 'Payment successful! 🎉',
+        'traveller_earned': traveller_earned,
+        'platform_fee': platform_fee
+    })
+
+
+# ── Single package (for tracking by ID) ────────────────────────────────────────
 @app.route('/package/<pkg_id>', methods=['GET'])
 def get_package(pkg_id):
     pkg = packages.get(pkg_id.upper())
@@ -317,7 +403,7 @@ def get_package(pkg_id):
     })
 
 
-# ── 7. All packages (debug) ───────────────────────────────────────────────────
+# ── All packages (debug) ───────────────────────────────────────────────────────
 @app.route('/packages', methods=['GET'])
 def all_packages():
     return jsonify(list(packages.values()))
