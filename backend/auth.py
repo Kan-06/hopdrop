@@ -1,5 +1,9 @@
 from werkzeug.security import generate_password_hash, check_password_hash
 from database import get_db
+from google.oauth2 import id_token
+from google.auth.transport import requests as google_requests
+
+GOOGLE_CLIENT_ID = '152151082369-pmf3e6sl3tgdqj8ku3r5n7rb5anc16cl.apps.googleusercontent.com'
 
 def register_user(name, email, password, phone, role="Both"):
     """
@@ -41,7 +45,6 @@ def verify_user(email, password):
         stored_hash = user['password_hash']
         if check_password_hash(stored_hash, password):
             print(f"Login successful. Welcome {user['name']}!")
-            # Note: Using email as ID for the return value to maintain compatibility
             return {"id": email, "name": user['name'], "email": email}
         else:
             print("Incorrect password.")
@@ -50,9 +53,50 @@ def verify_user(email, password):
         print("User not found.")
         return None
 
+def google_auth_user(token: str):
+    """
+    Verifies a Google OAuth JWT credential token and auto-creates
+    the user in Firestore on their first sign-in.
+    Returns user info dict on success, None on failure.
+    """
+    try:
+        # Verify the token with Google's public keys
+        id_info = id_token.verify_oauth2_token(
+            token,
+            google_requests.Request(),
+            GOOGLE_CLIENT_ID
+        )
+
+        email   = id_info['email']
+        name    = id_info.get('name', email)
+        picture = id_info.get('picture', '')
+
+        db = get_db()
+        user_ref = db.collection('users').document(email)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            # First-time Google login — auto-register
+            user_ref.set({
+                'name': name,
+                'email': email,
+                'picture': picture,
+                'auth_provider': 'google',
+                'role': 'Both'
+            })
+            print(f"New Google user registered: {name} ({email})")
+        else:
+            print(f"Existing Google user logged in: {name} ({email})")
+
+        return {'id': email, 'name': name, 'email': email, 'picture': picture}
+
+    except ValueError as e:
+        print(f"Google token verification failed: {e}")
+        return None
+
 if __name__ == "__main__":
     print("Testing Auth methods...")
-    # Added missing phone argument for the test case
     register_user("Alice Sender", "alice@example.com", "mypassword123", "0000000000")
     user_data = verify_user("alice@example.com", "mypassword123")
     print("Verified Data:", user_data if user_data else "Failed")
+

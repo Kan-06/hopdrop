@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HopDrop | Authentication</title>
+    <title>HopDrop | Sign In</title>
+    <meta name="description" content="Sign in to HopDrop — Next-Generation Peer-to-Peer Delivery Platform">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div class="animated-bg">
@@ -13,65 +16,39 @@
         <div class="orb orb-blue"></div>
         <div class="orb orb-yellow"></div>
     </div>
-    
+
     <div class="container glass-panel auth-panel">
         <header>
             <h1 class="logo">Hop<span>Drop</span></h1>
             <p class="subtitle">Next-Generation Peer-to-Peer Delivery</p>
         </header>
 
-        <div class="auth-tabs">
-            <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Login</button>
-            <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Register</button>
-        </div>
+        <div class="google-auth-container">
+            <div class="auth-divider-text">Welcome! Sign in to continue</div>
 
-        <div class="auth-forms-container">
-            <!-- Login Form -->
-            <form id="login-form" class="auth-form active">
-                <div class="form-header">
-                    <h2>Welcome Back</h2>
-                    <p>Enter your details to access your dashboard.</p>
-                </div>
-                <div class="form-group">
-                    <label for="login-email">Email Address</label>
-                    <input type="email" id="login-email" placeholder="you@domain.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="login-password">Password</label>
-                    <input type="password" id="login-password" placeholder="Enter your password" required>
-                </div>
-                <div class="form-message hidden" id="login-msg"></div>
-                <button type="submit" class="primary-btn">Sign In</button>
-            </form>
+            <div class="google-btn-wrapper">
+                <!-- Google One Tap & rendered button target -->
+                <div id="google-signin-btn"></div>
+            </div>
 
-            <!-- Register Form -->
-            <form id="register-form" class="auth-form hidden">
-                <div class="form-header">
-                    <h2>Create Account</h2>
-                    <p>Join the decentralized delivery network.</p>
-                </div>
-                <div class="form-group">
-                    <label for="register-name">Full Name</label>
-                    <input type="text" id="register-name" placeholder="John Doe" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-email">Email Address</label>
-                    <input type="email" id="register-email" placeholder="you@domain.com" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-password">Password</label>
-                    <input type="password" id="register-password" placeholder="Create a password" required>
-                </div>
-                <div class="form-group">
-                    <label for="register-confirm-password">Confirm Password</label>
-                    <input type="password" id="register-confirm-password" placeholder="Confirm your password" required>
-                </div>
-                <div class="form-message hidden" id="register-msg"></div>
-                <button type="submit" class="primary-btn">Create Account</button>
-            </form>
+            <p class="auth-note">
+                New users are automatically registered on first sign-in.<br>
+                Your Google account keeps your data secure.
+            </p>
+
+            <div class="form-message hidden" id="auth-msg"></div>
         </div>
     </div>
-    
+
+    <!-- Hidden Google One Tap trigger -->
+    <div id="g_id_onload"
+         data-client_id="152151082369-pmf3e6sl3tgdqj8ku3r5n7rb5anc16cl.apps.googleusercontent.com"
+         data-context="signin"
+         data-ux_mode="popup"
+         data-callback="handleGoogleCredential"
+         data-auto_prompt="false">
+    </div>
+
     <script src="auth.js"></script>
 </body>
 </html>
