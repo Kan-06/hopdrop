@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
-from auth import register_user, verify_user
+from auth import register_user, verify_user, google_auth_user
 from delivery_system import create_package, create_route, find_matches_for_route, update_delivery_status, find_packages_by_receiver
 
 from fastapi.middleware.cors import CORSMiddleware
@@ -70,6 +70,16 @@ def login(user: UserLogin):
     user_data = verify_user(user.email, user.password)
     if not user_data:
         raise HTTPException(status_code=401, detail="Invalid credentials")
+    return user_data
+
+class GoogleToken(BaseModel):
+    token: str
+
+@app.post("/auth/google")
+def auth_google(request: GoogleToken):
+    user_data = google_auth_user(request.token)
+    if not user_data:
+        raise HTTPException(status_code=401, detail="Invalid Firebase token")
     return user_data
 
 @app.post("/packages")

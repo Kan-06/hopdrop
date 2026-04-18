@@ -50,38 +50,21 @@ async function signInWithGoogle(msgElementId) {
         provider.setCustomParameters({ prompt: 'select_account' });
         const result = await firebase.auth().signInWithPopup(provider);
         const user = result.user;
+        const idToken = await user.getIdToken();
 
-        // Try to login first
-        const loginRes = await fetch('/login', {
+        const authRes = await fetch('/auth/google', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: user.email, password: 'GOOGLE_AUTH_EXTERNAL' })
+            body: JSON.stringify({ token: idToken })
         });
 
-        if (loginRes.ok) {
-            const userData = await loginRes.json();
+        if (authRes.ok) {
+            const userData = await authRes.json();
             localStorage.setItem('hopdrop_user', JSON.stringify(userData));
             window.location.href = 'dashboard.html';
         } else {
-            // Auto-register if user doesn't exist
-            const regRes = await fetch('/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: user.displayName || user.email,
-                    email: user.email,
-                    password: 'GOOGLE_AUTH_EXTERNAL',
-                    phone: user.phoneNumber || '0000000000',
-                    role: 'Both'
-                })
-            });
-
-            if (regRes.ok) {
-                localStorage.setItem('hopdrop_user', JSON.stringify({ name: user.displayName, email: user.email }));
-                window.location.href = 'dashboard.html';
-            } else {
-                throw new Error('Could not register your Google account. Please try again.');
-            }
+            const errorText = await authRes.text();
+            throw new Error('Google Authentication failed with backend.');
         }
     } catch (error) {
         console.error('Google Sign-In Error:', error);
