@@ -273,9 +273,15 @@
                 document.getElementById('sender_name').value = session.name;
                 document.getElementById('sender_name').readOnly = true;
                 document.getElementById('phone').value = session.phone;
-                document.getElementById('phone').readOnly = true;
                 document.getElementById('sender_name').style.opacity = '.7';
                 document.getElementById('phone').style.opacity = '.7';
+                
+                const trackPhone = document.getElementById('track_phone');
+                if (trackPhone) {
+                    trackPhone.value = session.phone;
+                    trackPhone.readOnly = true;
+                    trackPhone.style.opacity = '.7';
+                }
             });
         }
 
@@ -405,6 +411,10 @@
                 document.getElementById('form-section').classList.add('hidden');
                 document.getElementById('success-section').classList.add('hidden');
                 document.getElementById('track-section').classList.remove('hidden');
+                
+                if (session && document.getElementById('track_phone').value) {
+                    fetchSenderPackages();
+                }
             }
         }
 
