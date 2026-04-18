@@ -80,13 +80,14 @@
         <a href="index.html" class="back-link">← Back</a>
         <h1 class="logo">Hop<span>Drop</span></h1>
     </nav>
+    <div id="user-bar"></div>
 
     <div class="form-header">
         <h2>Track Your Packages</h2>
-        <p>Enter your phone number to see all packages being delivered to you.</p>
+        <p>Packages being delivered to you are shown below, auto-loaded from your account.</p>
     </div>
 
-    <div class="search-row">
+    <div class="search-row" id="search-row" style="display:none;">
         <div class="form-group">
             <label for="receiver-phone">Your Phone Number</label>
             <input type="tel" id="receiver-phone" placeholder="e.g. 9123456789" maxlength="10">
@@ -101,8 +102,13 @@
     <div id="results-area"></div>
 </div>
 
+<script src="session.js"></script>
 <script>
 const API = 'http://127.0.0.1:5000';
+
+// Session check
+const session = hdRequire('Receiver');
+if (session) hdBar('user-bar');
 
 async function searchPackages() {
     const phone = document.getElementById('receiver-phone').value.trim();
@@ -220,11 +226,26 @@ function renderCard(p) {
     </div>`;
 }
 
-// Allow pressing Enter to search
+// Auto-load on page open using session phone
 document.addEventListener('DOMContentLoaded', () => {
-    document.getElementById('receiver-phone').addEventListener('keydown', e => {
-        if (e.key === 'Enter') searchPackages();
-    });
+    if (session) {
+        // Pre-fill phone from session and auto-search
+        const phoneEl = document.getElementById('receiver-phone');
+        if (phoneEl) {
+            phoneEl.value = session.phone;
+            phoneEl.readOnly = true;
+            phoneEl.style.opacity = '.7';
+        }
+        searchPackages();
+    } else {
+        // If no session, show the search row so user can enter phone manually
+        document.getElementById('search-row').style.display = 'flex';
+    }
+
+    const phoneInput = document.getElementById('receiver-phone');
+    if (phoneInput) {
+        phoneInput.addEventListener('keydown', e => { if (e.key === 'Enter') searchPackages(); });
+    }
 });
 </script>
 </body>

@@ -158,6 +158,7 @@
         <a href="index.html" class="back-link">← Back</a>
         <h1 class="logo">Hop<span>Drop</span></h1>
     </nav>
+    <div id="user-bar"></div>
 
     <div class="form-header">
         <h2>Find Packages to Deliver</h2>
@@ -204,10 +205,15 @@
     </div>
 </div>
 
+<script src="session.js"></script>
 <script src="autocomplete.js"></script>
 <script>
 /* ─── Config ─────────────────────────────────────────────────────────────── */
 const API = 'http://127.0.0.1:5000';
+
+/* ─── Session ────────────────────────────────────────────────────── */
+const session = hdRequire('Traveller');
+if (session) hdBar('user-bar');
 
 /* ─── Session state ──────────────────────────────────────────────────────── */
 const acceptedCache  = {};   // pkgId → contact data returned from /accept-package
@@ -285,17 +291,22 @@ function renderCard(p) {
     // Contact block (shown only after accept)
     const contact = acceptedCache[p.id] ? (() => {
         const c  = acceptedCache[p.id];
-        const wa = `https://wa.me/91${c.phone}?text=${encodeURIComponent(
-            `Hi ${c.sender_name}, I'm your HopDrop traveller. I'll pick up the package soon!`)}`;
+        const waS = `https://wa.me/91${c.phone}?text=${encodeURIComponent(
+            `Hi ${c.sender_name}, I'm your HopDrop traveller. I'll pick up the package soon!`)}` ;
+        const waR = c.receiver_phone
+            ? `https://wa.me/91${c.receiver_phone}?text=${encodeURIComponent(
+                `Hi ${c.receiver_name || 'there'}! I'm your HopDrop traveller. Your package (ID: ${p.id}) from ${c.sender_name} is on its way to ${c.receiver_address}. I'll notify you when I'm close!`)}`
+            : null;
         return `<div class="contact-box">
             📞 <strong>Sender Contact — Unlocked</strong><br>
             Name: ${c.sender_name}<br>
             Phone: <a href="tel:${c.phone}" style="color:var(--secondary);">${c.phone}</a>
-            <a href="${wa}" target="_blank" class="wa-btn">💬 WhatsApp</a><br>
+            <a href="${waS}" target="_blank" class="wa-btn">💬 WhatsApp Sender</a><br>
             Pickup: ${c.sender_address}<br>
             Drop to: ${c.receiver_address}
             ${c.receiver_name  ? `<br>Receiver: ${c.receiver_name}`  : ''}
             ${c.receiver_phone ? ` · ${c.receiver_phone}` : ''}
+            ${waR ? `<br><a href="${waR}" target="_blank" class="wa-btn" style="background:#0a7c5c;margin-top:.35rem;">💬 WhatsApp Receiver</a>` : ''}
         </div>`;
     })() : '';
 
@@ -424,6 +435,11 @@ function closeModal(runCb) {
 
 /* ─── DOMContentLoaded — wire everything up ──────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
+    /* Auto-fill traveller name from session */
+    if (session) {
+        document.getElementById('traveller-name').value = session.name;
+    }
+
     /* ── Filter autocomplete ─────────────────────────────────────────── */
     acFilter = new AddressAutoComplete('route-filter', 'route-filter-sug', () => {
         // When user SELECTS a suggestion, immediately reload packages

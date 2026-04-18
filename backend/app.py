@@ -1,6 +1,6 @@
 """
-HopDrop — Flask Backend (v2)
-In-memory store. No auth, no Firebase, no external APIs.
+HopDrop — Flask Backend (v3)
+Added: /register and /login endpoints with in-memory user store.
 """
 
 from flask import Flask, request, jsonify
@@ -10,8 +10,9 @@ import uuid
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
-# ── In-memory storage ──────────────────────────────────────────────────────────
-packages = {}   # id -> package dict
+# ── In-memory stores ───────────────────────────────────────────────────────────
+packages = {}   # pkg_id  -> package dict
+users    = {}   # phone   -> user dict  (simple demo auth)
 # ──────────────────────────────────────────────────────────────────────────────
 
 @app.route('/')
@@ -19,45 +20,86 @@ def index():
     return app.send_static_file('index.html')
 
 
-# ── 1. Create Package ──────────────────────────────────────────────────────────
+# ── Auth: Register ─────────────────────────────────────────────────────────────
+@app.route('/register', methods=['POST'])
+def register():
+    data = request.get_json()
+    for field in ['name', 'phone', 'password', 'role']:
+        if not data.get(field):
+            return jsonify({'error': f'Missing field: {field}'}), 400
+
+    phone = data['phone'].strip()
+    if phone in users:
+        return jsonify({'error': 'Phone already registered. Please sign in.'}), 409
+
+    users[phone] = {
+        'name':     data['name'].strip(),
+        'phone':    phone,
+        'password': data['password'],
+        'role':     data['role'],
+    }
+    return jsonify({
+        'message': 'Registered successfully!',
+        'user': {'name': users[phone]['name'], 'phone': phone, 'role': data['role']}
+    }), 201
+
+
+# ── Auth: Login ────────────────────────────────────────────────────────────────
+@app.route('/login', methods=['POST'])
+def login():
+    data     = request.get_json()
+    phone    = data.get('phone', '').strip()
+    password = data.get('password', '').strip()
+    role     = data.get('role', '').strip()
+
+    if not phone or not password:
+        return jsonify({'error': 'Phone and password are required.'}), 400
+
+    user = users.get(phone)
+    if not user:
+        return jsonify({'error': 'Account not found. Please register first.'}), 404
+    if user['password'] != password:
+        return jsonify({'error': 'Incorrect password.'}), 401
+    if role and user['role'].lower() != role.lower():
+        return jsonify({'error': f'This account is registered as a {user["role"]}. Please select the correct role.'}), 403
+
+    return jsonify({'message': 'Logged in!',
+                    'user': {'name': user['name'], 'phone': user['phone'], 'role': user['role']}})
+
+
+# ── Create Package ─────────────────────────────────────────────────────────────
 @app.route('/create-package', methods=['POST'])
 def create_package():
     data = request.get_json()
-    required = ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward']
-    for field in required:
+    for field in ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward']:
         if not data.get(field):
             return jsonify({'error': f'Missing field: {field}'}), 400
 
     pkg_id = str(uuid.uuid4())[:8].upper()
     packages[pkg_id] = {
         'id':               pkg_id,
-        # Sender
         'sender_name':      data['sender_name'],
         'phone':            data['phone'],
         'sender_address':   data['sender_address'],
         'sender_lat':       data.get('sender_lat'),
         'sender_lng':       data.get('sender_lng'),
-        # Receiver
         'receiver_name':    data.get('receiver_name', ''),
         'receiver_phone':   data.get('receiver_phone', ''),
         'receiver_address': data['receiver_address'],
         'receiver_lat':     data.get('receiver_lat'),
         'receiver_lng':     data.get('receiver_lng'),
-        # Package
         'description':      data.get('description', ''),
         'reward':           float(data['reward']),
-        'package_photo':    data.get('package_photo', ''),   # base64 taken by sender
-        # Status
+        'package_photo':    data.get('package_photo', ''),
         'status':           'pending',
         'accepted_by':      None,
-        # Proof photos
-        'pickup_photo':     '',    # taken by traveller at pickup
-        'delivery_photo':  '',    # taken by traveller on delivery
+        'pickup_photo':     '',
+        'delivery_photo':   '',
     }
     return jsonify({'package_id': pkg_id, 'message': 'Package created successfully'}), 201
 
 
-# ── 2. Match Packages (all pending, safe view) ─────────────────────────────────
+# ── Match Packages (pending) ───────────────────────────────────────────────────
 @app.route('/match-packages', methods=['GET'])
 def match_packages():
     route = request.args.get('route', '').lower().strip()
@@ -81,7 +123,7 @@ def match_packages():
     return jsonify(result)
 
 
-# ── 3. Accept Package ──────────────────────────────────────────────────────────
+# ── Accept Package ─────────────────────────────────────────────────────────────
 @app.route('/accept-package', methods=['POST'])
 def accept_package():
     data = request.get_json()
@@ -90,14 +132,12 @@ def accept_package():
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
-
     pkg = packages[pkg_id]
     if pkg['status'] != 'pending':
         return jsonify({'error': f"Package is already {pkg['status']}"}), 400
 
     pkg['status']      = 'accepted'
     pkg['accepted_by'] = traveller_name
-
     if data.get('pickup_photo'):
         pkg['pickup_photo'] = data['pickup_photo']
 
@@ -110,18 +150,18 @@ def accept_package():
         'receiver_phone':   pkg['receiver_phone'],
         'receiver_address': pkg['receiver_address'],
         'description':      pkg['description'],
+        'package_id':       pkg_id,
     })
 
 
-# ── 4. Complete Delivery ───────────────────────────────────────────────────────
+# ── Complete Delivery ──────────────────────────────────────────────────────────
 @app.route('/complete-delivery', methods=['POST'])
 def complete_delivery():
-    data = request.get_json()
+    data   = request.get_json()
     pkg_id = data.get('package_id', '').upper()
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
-
     pkg = packages[pkg_id]
     if pkg['status'] == 'delivered':
         return jsonify({'error': 'Already delivered'}), 400
@@ -142,13 +182,12 @@ def complete_delivery():
     })
 
 
-# ── 5. Receiver — look up packages by phone ────────────────────────────────────
+# ── Receiver: lookup by phone ──────────────────────────────────────────────────
 @app.route('/receiver-packages', methods=['GET'])
 def receiver_packages():
     phone = request.args.get('phone', '').strip()
     if not phone:
-        return jsonify({'error': 'phone query param required'}), 400
-
+        return jsonify({'error': 'phone param required'}), 400
     result = []
     for p in packages.values():
         if p.get('receiver_phone') == phone:
@@ -168,27 +207,7 @@ def receiver_packages():
     return jsonify(result)
 
 
-# ── 6. Single package (for tracking by ID) ────────────────────────────────────
-@app.route('/package/<pkg_id>', methods=['GET'])
-def get_package(pkg_id):
-    pkg = packages.get(pkg_id.upper())
-    if not pkg:
-        return jsonify({'error': 'Not found'}), 404
-    return jsonify({
-        'id':               pkg['id'],
-        'sender_address':   pkg['sender_address'],
-        'receiver_address': pkg['receiver_address'],
-        'description':      pkg['description'],
-        'reward':           pkg['reward'],
-        'status':           pkg['status'],
-        'accepted_by':      pkg.get('accepted_by', ''),
-        'package_photo':    pkg.get('package_photo', ''),
-        'pickup_photo':     pkg.get('pickup_photo', ''),
-        'delivery_photo':   pkg.get('delivery_photo', ''),
-    })
-
-
-# ── 7. All packages (debug) ───────────────────────────────────────────────────
+# ── All packages (debug) ───────────────────────────────────────────────────────
 @app.route('/packages', methods=['GET'])
 def all_packages():
     return jsonify(list(packages.values()))

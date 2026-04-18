@@ -97,6 +97,7 @@
             <a href="index.html" class="back-link">← Back</a>
             <h1 class="logo">Hop<span>Drop</span></h1>
         </nav>
+        <div id="user-bar"></div>
 
         <!-- ── Form ─────────────────────────────────────────────────── -->
         <div id="form-section">
@@ -192,23 +193,44 @@
             <div class="success-card">
                 <div style="font-size:3rem; margin-bottom:.5rem;">🎉</div>
                 <h2 style="margin-bottom:.5rem;">Package Created!</h2>
-                <p style="color:var(--text-muted); margin-bottom:1rem;">Your Package ID is:</p>
+                <p style="color:var(--text-muted); margin-bottom:.5rem;">Package ID:</p>
                 <div class="pkg-id-display" id="pkg-id-display">——</div>
-                <button class="copy-btn" id="copy-btn" onclick="copyId()">📋 Copy ID</button>
-                <p style="color:var(--text-muted); font-size:.83rem; margin-top:1rem;">
-                    Share this ID with the receiver so they can track the package.
+
+                <!-- WhatsApp notify receiver -->
+                <div id="wa-receiver-wrap" style="margin-top:1rem;"></div>
+
+                <p style="color:var(--text-muted); font-size:.82rem; margin-top:.75rem;">
+                    The receiver will get the package ID and tracking link via WhatsApp.
                 </p>
             </div>
             <button class="primary-btn" style="margin-top:1.5rem;" onclick="resetForm()">➕ Send Another Package</button>
-            <a href="index.html" class="back-link" style="display:block; text-align:center; margin-top:1rem;">← Back to Home</a>
         </div>
     </div>
 
+    <script src="session.js"></script>
     <script src="autocomplete.js"></script>
     <script>
         const API = 'http://127.0.0.1:5000';
         let packagePhotoB64 = '';
-        let createdPkgId = '';
+        let createdPkgId    = '';
+        let savedReceiverPhone = '';
+        let savedReceiverName  = '';
+        let savedSenderName    = '';
+
+        // ── Session check ───────────────────────────────────────────────
+        const session = hdRequire('Sender');
+        if (session) {
+            hdBar('user-bar');
+            // Pre-fill sender fields from account
+            document.addEventListener('DOMContentLoaded', () => {
+                document.getElementById('sender_name').value = session.name;
+                document.getElementById('sender_name').readOnly = true;
+                document.getElementById('phone').value = session.phone;
+                document.getElementById('phone').readOnly = true;
+                document.getElementById('sender_name').style.opacity = '.7';
+                document.getElementById('phone').style.opacity = '.7';
+            });
+        }
 
         // ── Address Autocomplete setup ──────────────────────────────────
         const acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
@@ -264,10 +286,35 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    createdPkgId = data.package_id;
+                    createdPkgId       = data.package_id;
+                    savedReceiverPhone = payload.receiver_phone;
+                    savedReceiverName  = payload.receiver_name || 'there';
+                    savedSenderName    = payload.sender_name;
+
                     document.getElementById('pkg-id-display').textContent = createdPkgId;
                     document.getElementById('form-section').classList.add('hidden');
                     document.getElementById('success-section').classList.remove('hidden');
+
+                    // Build WhatsApp button for receiver
+                    const waWrap = document.getElementById('wa-receiver-wrap');
+                    if (savedReceiverPhone) {
+                        const trackUrl = 'http://127.0.0.1:5000/receiver.html';
+                        const waMsg = `Hi ${savedReceiverName}! 📦\n${savedSenderName} has sent you a package via HopDrop.\n\nPackage ID: ${createdPkgId}\nTrack your delivery at: ${trackUrl}\n\n(Log in as Receiver using your phone number to see updates & proof photos)`;
+                        const waUrl = `https://wa.me/91${savedReceiverPhone}?text=${encodeURIComponent(waMsg)}`;
+                        waWrap.innerHTML = `
+                            <a href="${waUrl}" target="_blank"
+                               style="display:inline-flex;align-items:center;gap:.5rem;
+                                      background:#25d366;color:white;border:none;
+                                      padding:.7rem 1.4rem;border-radius:12px;
+                                      font-weight:700;font-size:.95rem;
+                                      text-decoration:none;transition:filter .2s;"
+                               onmouseover="this.style.filter='brightness(1.1)'"
+                               onmouseout="this.style.filter='none'">
+                                💬 Notify Receiver on WhatsApp
+                            </a>`;
+                    } else {
+                        waWrap.innerHTML = `<p style="font-size:.83rem;color:var(--text-muted);">⚠ No receiver phone entered — they cannot be notified via WhatsApp.</p>`;
+                    }
                 } else {
                     showMsg(data.error || 'Failed to create package.', 'error');
                 }
@@ -284,13 +331,6 @@
             msg.className = `form-message ${type}`;
         }
 
-        function copyId() {
-            navigator.clipboard.writeText(createdPkgId).then(() => {
-                const btn = document.getElementById('copy-btn');
-                btn.textContent = '✅ Copied!';
-                setTimeout(() => btn.textContent = '📋 Copy ID', 2000);
-            });
-        }
 
         function resetForm() {
             document.getElementById('sender-form').reset();
