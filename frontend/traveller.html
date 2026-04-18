@@ -73,6 +73,7 @@
         .sp { display: inline-block; padding: .22rem .68rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; }
         .sp-pending  { background: rgba(234,179,8,.15);  color: var(--warning); }
         .sp-accepted { background: rgba(6,182,212,.15);  color: var(--secondary); }
+        .sp-in-transit{ background: rgba(168,85,247,.15); color: #a855f7; }
         .sp-delivered{ background: rgba(34,197,94,.15);  color: var(--success); }
 
         /* Contact box */
@@ -144,6 +145,18 @@
         .empty-state { text-align: center; color: var(--text-muted); padding: 3rem 0; }
         .empty-state .icon { font-size: 3rem; margin-bottom: .75rem; }
         .empty-state code { display: block; font-size: .8rem; margin-top: .5rem; opacity: .6; }
+        
+        /* Wallet Box */
+        .wallet-box {
+            background: rgba(34, 197, 94, 0.05); border: 1px solid rgba(34, 197, 94, 0.3);
+            border-radius: 12px; padding: 1.25rem; margin-bottom: 1.75rem;
+            display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;
+        }
+        .wallet-stat { display: flex; flex-direction: column; gap: 0.25rem; }
+        .wallet-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .wallet-value { font-size: 1.2rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
+        .wallet-value.success { color: var(--success); }
+        .wallet-value.warning { color: var(--warning); }
     </style>
 </head>
 <body>
@@ -164,6 +177,35 @@
         <p>Browse available packages, accept one, pick up from sender, and earn your reward.</p>
     </div>
 
+    <!-- ── Wallet Summary ─────────────────────────────────────────────── -->
+    <div class="wallet-box" id="wallet-box">
+        <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; align-items: center;">
+            <div class="wallet-stat">
+                <span class="wallet-label">Available Balance</span>
+                <span class="wallet-value success" id="wallet-available">₹ 0.00</span>
+            </div>
+            <div class="wallet-stat">
+                <span class="wallet-label">Locked Deposit</span>
+                <span class="wallet-value warning" id="wallet-locked">₹ 0.00</span>
+            </div>
+            
+            <!-- Verification Badge -->
+            <div class="wallet-stat" style="margin-left: 1rem; padding-left: 1rem; border-left: 1px solid rgba(255,255,255,0.1);">
+                <span class="wallet-label">Traveller Status</span>
+                <span id="verification-badge" style="font-size: 0.85rem; font-weight: 700; background: rgba(239,68,68,0.15); color: #ef4444; padding: 0.3rem 0.75rem; border-radius: 99px; margin-top: 0.2rem; display: inline-block;">
+                    ❌ Unverified
+                </span>
+                <button id="verify-btn" onclick="verifyIdentity()" style="background: none; border: none; color: var(--secondary); font-size: 0.75rem; cursor: pointer; text-decoration: underline; margin-top: 0.25rem;">Complete Student ID Check</button>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 0.5rem;">
+            <button class="btn-refresh" style="padding: 0.5rem 1rem; font-size: 0.85rem;" onclick="topUpWallet()">➕ Add Money</button>
+            <div style="font-size: 0.75rem; color: var(--text-muted); max-width: 250px; text-align: right;">
+                A ₹50 deposit is required to accept packages.
+            </div>
+        </div>
+    </div>
+
     <!-- ── Toolbar ────────────────────────────────────────────────────── -->
     <div class="toolbar">
         <div class="form-group">
@@ -178,7 +220,7 @@
             <div id="route-filter-sug" class="sug-box hidden"></div>
         </div>
 
-        <button class="btn-refresh" id="refresh-btn" onclick="loadPackages()">🔄 Refresh</button>
+        <button class="btn-refresh" id="refresh-btn" onclick="loadPackages(); loadWallet();">🔄 Refresh</button>
     </div>
 
     <!-- ── Package list ────────────────────────────────────────────────── -->
@@ -218,6 +260,128 @@ const deliveredCache = {};   // pkgId → earnings data returned from /complete-
 let acFilter = null;
 
 /* ─── Load & display packages ────────────────────────────────────────────── */
+async function loadWallet() {
+    const tName = document.getElementById('traveller-name').value.trim() || 'Traveller';
+    try {
+        const res = await fetch(`${API}/wallet/${encodeURIComponent(tName)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        const available = parseFloat(data.wallet_balance || 0).toFixed(2);
+        const locked = parseFloat(data.locked_balance || 0).toFixed(2);
+        document.getElementById('wallet-available').innerHTML = `₹ ${available}`;
+        document.getElementById('wallet-locked').innerHTML = `₹ ${locked} <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: normal;">(In Escrow)</span>`;
+        
+        // Update Verification Badge
+        const badge = document.getElementById('verification-badge');
+        const verifyBtn = document.getElementById('verify-btn');
+        if (data.verified) {
+            badge.innerHTML = `✅ Verified Student`;
+            badge.style.background = 'rgba(34,197,94,0.15)';
+            badge.style.color = 'var(--success)';
+            verifyBtn.style.display = 'none';
+        } else {
+            badge.innerHTML = `❌ Unverified`;
+            badge.style.background = 'rgba(239,68,68,0.15)';
+            badge.style.color = '#ef4444';
+            verifyBtn.style.display = 'inline-block';
+        }
+        
+    } catch (err) {
+        console.error('Failed to load wallet', err);
+    }
+}
+
+async function verifyIdentity() {
+    const tName = document.getElementById('traveller-name').value.trim() || 'Traveller';
+    
+    // 1. Phone number prompt for OTP
+    const phone = prompt("STEP 1: Phone Verification\n\nEnter your 10-digit mobile number to receive an OTP:");
+    if (!phone) return;
+    
+    // Simulate SMS latency
+    alert(`Sending OTP via SMS to ${phone}...\n\n(For this demo, assume you received: 1234)`);
+    
+    // 2. OTP Entry
+    const otp = prompt(`Enter the 4-digit OTP sent to ${phone}:`);
+    if (otp !== "1234") {
+        alert("❌ Invalid OTP entered. Verification aborted.");
+        return;
+    }
+    
+    // 3. ID and Selfie
+    alert("✅ OTP Verified!\n\nSTEP 2: Identity Check\n\n1. Please take a photo of your College/Student ID.\n2. Please take a live Selfie.");
+    
+    // Simulate API delay for OCR and Facial recognition
+    const btn = document.getElementById('verify-btn');
+    const oldText = btn.textContent;
+    btn.textContent = "⌛ Scanning ID...";
+    btn.disabled = true;
+
+    setTimeout(async () => {
+        try {
+            const res = await fetch(`${API}/verify-identity`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ traveller_name: tName })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`✅ Identity Verified!\n\nYour Student ID matches you selfie. You can now accept packages!`);
+                await loadWallet();
+            } else {
+                alert('Verification failed: ' + data.error);
+                btn.textContent = oldText;
+                btn.disabled = false;
+            }
+        } catch (err) {
+            alert('Server error.');
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
+    }, 1500); // 1.5s mock processing delay
+}
+
+async function topUpWallet() {
+    const amountStr = prompt("MOCK PAYMENT GATEWAY\n\nEnter amount to add to your wallet (₹):", "100");
+    if (!amountStr) return; // Cancelled
+    
+    const amount = parseFloat(amountStr);
+    if (isNaN(amount) || amount <= 0) {
+        alert("Please enter a valid amount.");
+        return;
+    }
+
+    const tName = document.getElementById('traveller-name').value.trim() || 'Traveller';
+    
+    // Simulate payment delay
+    const btn = document.querySelector('.wallet-box .btn-refresh');
+    const oldText = btn.textContent;
+    btn.textContent = "⌛ Processing...";
+    btn.disabled = true;
+
+    setTimeout(async () => {
+        try {
+            const res = await fetch(`${API}/top-up`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ traveller_name: tName, amount: amount })
+            });
+            const data = await res.json();
+            if (res.ok) {
+                alert(`✅ Payment Successful!\n\n₹${amount} has been added to your HopDrop Wallet.`);
+                await loadWallet();
+            } else {
+                alert('Top-up failed: ' + data.error);
+            }
+        } catch (err) {
+            alert('Bank connection error.');
+        } finally {
+            btn.textContent = oldText;
+            btn.disabled = false;
+        }
+    }, 1200); // 1.2s mock delay
+}
+
 async function loadPackages() {
     const grid  = document.getElementById('pkg-grid');
     const badge = document.getElementById('count-badge');
@@ -275,7 +439,7 @@ async function loadPackages() {
 
 /* ─── Render a single package card ──────────────────────────────────────── */
 function renderCard(p) {
-    const spCls = { pending:'sp-pending', accepted:'sp-accepted', delivered:'sp-delivered' }[p.status] || 'sp-pending';
+    const spCls = { pending:'sp-pending', accepted:'sp-accepted', 'in-transit':'sp-in-transit', delivered:'sp-delivered' }[p.status] || 'sp-pending';
 
     // Sender thumbnail (set by sender)
     const thumb = p.package_photo
@@ -313,7 +477,9 @@ function renderCard(p) {
     let actions = '';
     if (p.status === 'pending') {
         actions = `<button class="btn-accept" onclick="startAccept('${p.id}')">✅ Accept Package</button>`;
-    } else if (p.status === 'accepted' && acceptedCache[p.id]) {
+    } else if (p.status === 'accepted') {
+        actions = `<button class="btn-accept" style="background:#a855f7" onclick="startPickup('${p.id}')">🏃 Confirm Pickup</button>`;
+    } else if (p.status === 'in-transit') {
         actions = `<button class="btn-complete" onclick="startComplete('${p.id}')">🏁 Complete Delivery</button>`;
     } else if (p.status === 'delivered') {
         actions = `<span class="sp sp-delivered">✓ Delivered</span>`;
@@ -359,6 +525,7 @@ function startAccept(pkgId) {
                 if (res.ok) {
                     acceptedCache[pkgId] = data;
                     await loadPackages();
+                    await loadWallet();
                 } else {
                     alert(data.error || 'Could not accept package.');
                     if (btn) { btn.disabled = false; btn.textContent = '✅ Accept Package'; }
@@ -371,8 +538,39 @@ function startAccept(pkgId) {
     );
 }
 
+/* ─── Confirm Pickup flow (OTP) ──────────────────────────────────────────── */
+async function startPickup(pkgId) {
+    const otp = prompt("SECURE CHAIN: Pickup Phase\n\nPlease ask the Sender for their 4-digit Pickup OTP:\n\n(Hint for demo: 1234)");
+    if (!otp) return;
+    
+    const btn = document.querySelector(`#card-${pkgId} .btn-accept`);
+    if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
+
+    try {
+        const res = await fetch(`${API}/pickup-package`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ package_id: pkgId, otp: otp }),
+        });
+        const data = await res.json();
+        if (res.ok) {
+            alert(`✅ ${data.message}`);
+            await loadPackages();
+        } else {
+            alert(data.error || 'Could not confirm pickup.');
+            if (btn) { btn.disabled = false; btn.textContent = '🏃 Confirm Pickup'; }
+        }
+    } catch (err) {
+        alert('Server error: ' + err.message);
+        if (btn) { btn.disabled = false; btn.textContent = '🏃 Confirm Pickup'; }
+    }
+}
+
 /* ─── Complete delivery flow ─────────────────────────────────────────────── */
 function startComplete(pkgId) {
+    const otp = prompt("SECURE CHAIN: Delivery Phase\n\nPlease ask the Receiver for their 4-digit Delivery OTP:\n\n(Hint for demo: 9876)");
+    if (!otp) return;
+
     openModal(
         '📷 Delivery Proof (optional)',
         'Take a photo of the delivered package at the receiver\'s location as proof.',
@@ -384,12 +582,13 @@ function startComplete(pkgId) {
                 const res = await fetch(`${API}/complete-delivery`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ package_id: pkgId, delivery_photo: photo }),
+                    body: JSON.stringify({ package_id: pkgId, delivery_photo: photo, otp: otp }),
                 });
                 const data = await res.json();
                 if (res.ok) {
                     deliveredCache[pkgId] = data;
                     await loadPackages();
+                    await loadWallet();
                 } else {
                     alert(data.error || 'Could not complete delivery.');
                     if (btn) { btn.disabled = false; btn.textContent = '🏁 Complete Delivery'; }
@@ -450,6 +649,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    document.getElementById('traveller-name').addEventListener('input', () => {
+        loadWallet(); // Dynamically update wallet when changing name
+    });
+
     /* ── Photo modal events ──────────────────────────────────────────── */
     document.getElementById('modal-pick-btn').addEventListener('click', () => {
         document.getElementById('modal-file-input').click();
@@ -478,6 +681,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /* ── Initial load ────────────────────────────────────────────────── */
     loadPackages();
+    loadWallet();
 });
 </script>
 </body>

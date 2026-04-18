@@ -12,11 +12,49 @@ CORS(app)
 
 # ── In-memory storage ──────────────────────────────────────────────────────────
 packages = {}   # id -> package dict
+users = {}      # name -> { "wallet_balance": float, "locked_balance": float, "transactions": list }
+LOCK_AMOUNT = 50.0  # ₹50 deposit required to accept a package
 # ──────────────────────────────────────────────────────────────────────────────
 
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
+
+def get_or_create_user(name):
+    if name not in users:
+        # Give a starting balance to test easily
+        users[name] = {"wallet_balance": 150.0, "locked_balance": 0.0, "transactions": [], "verified": False}
+    return users[name]
+
+@app.route('/wallet/<name>', methods=['GET'])
+def get_wallet(name):
+    user = get_or_create_user(name)
+    return jsonify(user)
+
+@app.route('/top-up', methods=['POST'])
+def top_up():
+    data = request.get_json()
+    name = data.get('traveller_name', '')
+    amount = float(data.get('amount', 0))
+    if not name or amount <= 0:
+        return jsonify({'error': 'Invalid name or amount'}), 400
+    
+    user = get_or_create_user(name)
+    user['wallet_balance'] += amount
+    user['transactions'].append(f'Top-Up: Added ₹{amount}')
+    return jsonify({'message': f'Successfully topped up ₹{amount}', 'new_balance': user['wallet_balance']})
+
+@app.route('/verify-identity', methods=['POST'])
+def verify_identity():
+    data = request.get_json()
+    name = data.get('traveller_name', '')
+    if not name:
+        return jsonify({'error': 'Invalid name'}), 400
+    
+    user = get_or_create_user(name)
+    user['verified'] = True
+    user['transactions'].append('Identity Verified: Student ID & Selfie captured')
+    return jsonify({'message': 'Identity Verified Successfully!'})
 
 
 # ── 1. Create Package ──────────────────────────────────────────────────────────
@@ -95,6 +133,18 @@ def accept_package():
     if pkg['status'] != 'pending':
         return jsonify({'error': f"Package is already {pkg['status']}"}), 400
 
+    user = get_or_create_user(traveller_name)
+    if not user.get('verified', False):
+        return jsonify({'error': 'Account not verified! Please complete Student Verification to accept packages.'}), 403
+
+    if user['wallet_balance'] < LOCK_AMOUNT:
+        return jsonify({'error': f'Insufficient wallet balance! Minimum ₹{LOCK_AMOUNT} required as deposit.'}), 400
+
+    # Lock Deposit
+    user['wallet_balance'] -= LOCK_AMOUNT
+    user['locked_balance'] += LOCK_AMOUNT
+    user['transactions'].append(f'Locked ₹{LOCK_AMOUNT} deposit for package {pkg_id}')
+
     pkg['status']      = 'accepted'
     pkg['accepted_by'] = traveller_name
 
@@ -113,11 +163,39 @@ def accept_package():
     })
 
 
-# ── 4. Complete Delivery ───────────────────────────────────────────────────────
+# ── 3b. Confirm Pickup (Sender -> Traveller OTP) ───────────────────────────────
+@app.route('/pickup-package', methods=['POST'])
+def pickup_package():
+    data = request.get_json()
+    pkg_id = data.get('package_id', '').upper()
+    otp = data.get('otp', '1234')
+
+    if pkg_id not in packages:
+        return jsonify({'error': 'Package not found'}), 404
+
+    pkg = packages[pkg_id]
+    if pkg['status'] != 'accepted':
+        return jsonify({'error': f"Package must be 'accepted' first, currently {pkg['status']}"}), 400
+
+    if str(otp) != "1234":
+        return jsonify({'error': 'Invalid Pickup OTP from Sender'}), 400
+
+    pkg['status'] = 'in-transit'
+    
+    if data.get('pickup_photo'):
+        pkg['pickup_photo'] = data['pickup_photo']
+
+    return jsonify({
+        'message': 'Pickup confirmed! Secure chain started.'
+    })
+
+
+# ── 4. Complete Delivery (Traveller -> Receiver OTP) ───────────────────────────
 @app.route('/complete-delivery', methods=['POST'])
 def complete_delivery():
     data = request.get_json()
     pkg_id = data.get('package_id', '').upper()
+    otp = data.get('otp', '9876')
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -125,6 +203,11 @@ def complete_delivery():
     pkg = packages[pkg_id]
     if pkg['status'] == 'delivered':
         return jsonify({'error': 'Already delivered'}), 400
+    if pkg['status'] != 'in-transit':
+        return jsonify({'error': 'Package must be picked up before delivery'}), 400
+
+    if str(otp) != "9876":
+        return jsonify({'error': 'Invalid Delivery OTP from Receiver'}), 400
 
     pkg['status'] = 'delivered'
     if data.get('delivery_photo'):
@@ -134,12 +217,58 @@ def complete_delivery():
     traveller_earned = round(reward * 0.80, 2)
     platform_fee     = round(reward * 0.20, 2)
 
+    traveller_name = pkg.get('accepted_by', '')
+    if traveller_name in users:
+        user = users[traveller_name]
+        if user['locked_balance'] >= LOCK_AMOUNT:
+            # Release deposit
+            user['locked_balance'] -= LOCK_AMOUNT
+            user['wallet_balance'] += LOCK_AMOUNT
+            user['transactions'].append(f'Released ₹{LOCK_AMOUNT} deposit for package {pkg_id}')
+        
+        # Add earnings
+        user['wallet_balance'] += traveller_earned
+        user['transactions'].append(f'Earned ₹{traveller_earned} from package {pkg_id}')
+
     return jsonify({
         'message':          'Delivery completed! 🎉',
         'reward':           reward,
         'traveller_earned': traveller_earned,
         'platform_fee':     platform_fee,
     })
+
+
+# ── 4b. Cancel Delivery (Penalty) ──────────────────────────────────────────────
+@app.route('/cancel-delivery', methods=['POST'])
+def cancel_delivery():
+    data = request.get_json()
+    pkg_id = data.get('package_id', '').upper()
+    penalty_amount = float(data.get('penalty', LOCK_AMOUNT)) # Can be partial or full
+
+    if pkg_id not in packages:
+        return jsonify({'error': 'Package not found'}), 404
+
+    pkg = packages[pkg_id]
+    if pkg['status'] != 'accepted':
+        return jsonify({'error': 'Only accepted packages can be cancelled'}), 400
+
+    traveller_name = pkg.get('accepted_by', '')
+    if traveller_name in users:
+        user = users[traveller_name]
+        
+        # Determine actual penalty based on locked balance (just in case)
+        actual_penalty = min(penalty_amount, user['locked_balance'])
+        returned_amount = LOCK_AMOUNT - actual_penalty
+        
+        user['locked_balance'] -= LOCK_AMOUNT
+        user['wallet_balance'] += returned_amount
+        
+        user['transactions'].append(f'Cancelled package {pkg_id}. Penalty applied: ₹{actual_penalty}')
+
+    pkg['status'] = 'pending'
+    pkg['accepted_by'] = None
+
+    return jsonify({'message': f'Delivery cancelled. Penalty applied: ₹{penalty_amount}'})
 
 
 # ── 5. Receiver — look up packages by phone ────────────────────────────────────
