@@ -5,14 +5,15 @@ Added: /register and /login endpoints with in-memory user store.
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from typing import Dict, Any
 import uuid
 
 app = Flask(__name__, static_folder='../frontend', static_url_path='')
 CORS(app)
 
 # ── In-memory storage ──────────────────────────────────────────────────────────
-packages = {}   # id -> package dict
-users = {}      # name or phone -> { "wallet_balance": float, "locked_balance": float, "transactions": list, ... auth fields }
+packages: Dict[str, Any] = {}   # id -> package dict
+users: Dict[str, Any] = {}      # name or phone -> { "wallet_balance": float, "locked_balance": float, "transactions": list, ... auth fields }
 LOCK_AMOUNT = 50.0  # ₹50 deposit required to accept a package
 # ──────────────────────────────────────────────────────────────────────────────
 

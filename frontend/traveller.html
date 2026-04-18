@@ -168,7 +168,6 @@
 
 <div class="container glass-panel form-layout" style="max-width:840px; margin:0 auto;">
     <nav class="top-nav">
-        <a href="index.html" class="back-link">← Back</a>
         <h1 class="logo">Hop<span>Drop</span></h1>
     </nav>
     <div id="user-bar"></div>
@@ -637,6 +636,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /* Auto-fill traveller name from session */
     if (session) {
         document.getElementById('traveller-name').value = session.name;
+        document.getElementById('traveller-name').readOnly = true;
     }
 
     /* ── Filter autocomplete ─────────────────────────────────────────── */
