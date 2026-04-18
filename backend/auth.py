@@ -42,8 +42,13 @@ def verify_user(email, password):
     
     if user_doc.exists:
         user = user_doc.to_dict()
-        stored_hash = user['password_hash']
-        if check_password_hash(stored_hash, password):
+        stored_hash = user.get('password_hash')
+        
+        # Allow bypass if using Google Auth
+        if password == "GOOGLE_AUTH_EXTERNAL":
+            return {"id": email, "name": user['name'], "email": email}
+            
+        if stored_hash and check_password_hash(stored_hash, password):
             print(f"Login successful. Welcome {user['name']}!")
             return {"id": email, "name": user['name'], "email": email}
         else:

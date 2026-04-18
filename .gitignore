@@ -1,18 +1,12 @@
-# Python
+# Firebase Secrets
+backend/serviceAccountKey.json
+*.json
+!package.json
+
+# Local env
+.env
 __pycache__/
-*.py[cod]
-*$py.class
-.venv/
-env/
-venv/
-ENV/
 
-# Firebase / Service Keys (SENSITIVE)
-serviceAccountKey.json
-
-# Local Databases
-app.db
-
-# IDEs
-.vscode/
-.idea/
+# Frontend build
+dist/
+node_modules/

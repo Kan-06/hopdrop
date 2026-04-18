@@ -16,9 +16,15 @@
     
     <div class="container glass-panel">
         <header>
+            <div class="user-profile">
+                <span id="user-greeting">Welcome!</span>
+                <button id="logout-btn" class="back-link" style="border:none; background:none; cursor:pointer;">Logout</button>
+            </div>
             <h1 class="logo">Hop<span>Drop</span></h1>
             <p class="subtitle">Next-Generation Peer-to-Peer Delivery</p>
         </header>
+
+        <script src="session.js"></script>
 
         <main class="role-selection">
             <h2 class="prompt-text">How would you like to use HopDrop today?</h2>
@@ -34,6 +40,12 @@
                     <div class="icon">🏃</div>
                     <h3>Traveller</h3>
                     <p>Earn money by delivering packages along your route.</p>
+                </a>
+
+                <a href="receiver.html" class="role-card">
+                    <div class="icon">🎁</div>
+                    <h3>Receiver</h3>
+                    <p>Track and confirm receipt of your incoming packages.</p>
                 </a>
             </div>
         </main>

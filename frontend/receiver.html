@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HopDrop | Check Packages</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+    <div class="animated-bg">
+        <div class="orb orb-pink"></div>
+        <div class="orb orb-blue"></div>
+        <div class="orb orb-yellow"></div>
+    </div>
+
+    <div class="container glass-panel form-layout">
+        <nav class="top-nav">
+            <a href="dashboard.html" class="back-link">← Back to roles</a>
+            <h1 class="logo">Hop<span>Drop</span></h1>
+        </nav>
+
+        <div class="form-header">
+            <h2>Receiver Dashboard</h2>
+            <p id="receiver-welcome">Enter your ID to check your incoming packages.</p>
+        </div>
+
+        <form id="receiver-form" class="sender-form">
+            <div class="form-group">
+                <label for="receiver-id-check">Receiver ID / Email</label>
+                <div class="input-with-icon">
+                    <input type="text" id="receiver-id-check" placeholder="e.g. aditya@example.com" required>
+                    <span id="receiver-status" class="status-badge">Checking...</span>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="primary-btn" id="check-btn">Refresh My Dropbox</button>
+            </div>
+
+            <div id="check-msg" class="form-message hidden"></div>
+        </form>
+
+        <div id="receiver-results" class="results-area hidden">
+            <div class="results-header"
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h3 class="results-title" style="margin-bottom: 0;">Incoming Packages</h3>
+                <span id="package-count" class="package-reward" style="background: var(--secondary); opacity: 0.8;">0
+                    Found</span>
+            </div>
+            <div id="receiver-packages-list" class="packages-list">
+                <!-- Packages injected via JS -->
+            </div>
+        </div>
+    </div>
+
+    <script src="session.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>

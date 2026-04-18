@@ -51,12 +51,13 @@ def calculate_meeting_time(departure_time_str, distance_km, speed_kmh=40):
     except:
         return "TBD"
 
-def create_package(sender_id, pickup_name, dropoff_name, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, reward_amount):
+def create_package(sender_id, receiver_id, pickup_name, dropoff_name, pickup_lat, pickup_lng, dropoff_lat, dropoff_lng, reward_amount):
     """Adds a new package to Firestore with GeoPoints."""
     db = get_db()
     try:
         doc_ref = db.collection('packages').add({
             'sender_id': sender_id,
+            'receiver_id': receiver_id,
             'pickup_location': pickup_name,
             'dropoff_location': dropoff_name,
             'pickup_geo': GeoPoint(pickup_lat, pickup_lng),
@@ -70,6 +71,21 @@ def create_package(sender_id, pickup_name, dropoff_name, pickup_lat, pickup_lng,
     except Exception as e:
         print(f"Error creating package: {e}")
         return None
+
+def find_packages_by_receiver(receiver_id):
+    """Finds all packages destined for a specific receiver."""
+    db = get_db()
+    try:
+        query = db.collection('packages').where('receiver_id', '==', receiver_id)
+        packages = []
+        for doc in query.stream():
+            pkg = doc.to_dict()
+            pkg['id'] = doc.id
+            packages.append(pkg)
+        return packages
+    except Exception as e:
+        print(f"Error finding packages for receiver: {e}")
+        return []
 
 def check_proximity(current_lat, current_lng, target_lat, target_lng, threshold_km=0.5):
     """Checks if the traveller is within the proximity threshold of a meeting point."""

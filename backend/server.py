@@ -2,10 +2,17 @@ from fastapi import FastAPI, HTTPException, Depends
 from pydantic import BaseModel
 from typing import List, Optional
 import uvicorn
+<<<<<<< HEAD
 from auth import register_user, verify_user, google_auth_user
 from delivery_system import create_package, create_route, find_matches_for_route, update_delivery_status
+=======
+from auth import register_user, verify_user
+from delivery_system import create_package, create_route, find_matches_for_route, update_delivery_status, find_packages_by_receiver
+>>>>>>> faf449f (Complete Firebase integration: Live Firestore, Google Auth, and Session Management)
 
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+import os
 
 app = FastAPI(title="HopDrop Package Delivery API")
 
@@ -32,6 +39,7 @@ class UserLogin(BaseModel):
 
 class PackageCreate(BaseModel):
     sender_id: str
+    receiver_id: str
     pickup_location: str
     dropoff_location: str
     pickup_lat: float
@@ -81,10 +89,15 @@ def google_login(payload: GoogleToken):
 
 @app.post("/packages")
 def add_package(pkg: PackageCreate):
-    pkg_id = create_package(pkg.sender_id, pkg.pickup_location, pkg.dropoff_location, 
+    pkg_id = create_package(pkg.sender_id, pkg.receiver_id, pkg.pickup_location, pkg.dropoff_location, 
                             pkg.pickup_lat, pkg.pickup_lng, pkg.dropoff_lat, pkg.dropoff_lng, 
                             pkg.reward_amount)
     return {"package_id": pkg_id, "status": "Pending"}
+
+@app.get("/packages/receiver/{receiver_id}")
+def get_packages_for_receiver(receiver_id: str):
+    packages = find_packages_by_receiver(receiver_id)
+    return packages
 
 @app.post("/routes")
 def add_route(route: RouteCreate):
@@ -104,9 +117,17 @@ def change_status(update: StatusUpdate):
         raise HTTPException(status_code=500, detail="Failed to update status")
     return {"message": f"Package status updated to {update.new_status}"}
 
-@app.get("/")
-def root():
+@app.get("/favicon.ico", include_in_schema=False)
+def favicon():
+    return {}
+
+@app.get("/api")
+def api_root():
     return {"message": "Welcome to the HopDrop Delivery API", "docs": "/docs"}
 
+# Serve static files (MUST BE AT THE END)
+frontend_path = os.path.join(os.path.dirname(__file__), "..", "frontend")
+app.mount("/", StaticFiles(directory=frontend_path, html=True), name="static")
+
 if __name__ == "__main__":
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8001)

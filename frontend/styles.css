@@ -109,6 +109,39 @@ body {
 header {
     text-align: center;
     margin-bottom: 3rem;
+    position: relative;
+}
+
+.user-profile {
+    position: absolute;
+    top: -1rem;
+    right: 0;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    font-size: 0.85rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+}
+
+#user-greeting {
+    color: var(--text);
+    font-weight: 600;
+}
+
+#logout-btn {
+    color: var(--primary);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    transition: all 0.2s;
+}
+
+#logout-btn:hover {
+    color: var(--secondary);
+    transform: scale(1.05);
 }
 
 .subtitle {
@@ -490,16 +523,49 @@ input:focus, textarea:focus {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.google-btn-wrapper:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(6, 182, 212, 0.2);
-}
-
-.auth-note {
-    font-size: 0.82rem;
-    color: var(--text-muted);
+.divider {
+    display: flex;
+    align-items: center;
     text-align: center;
-    line-height: 1.6;
-    max-width: 320px;
+    margin: 1.5rem 0;
+    color: var(--text-muted);
+    font-size: 0.8rem;
 }
 
+.divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--glass-border);
+}
+
+.divider span {
+    padding: 0 1rem;
+}
+
+.google-btn {
+    width: 100%;
+    padding: 0.85rem;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: white;
+    color: #374151;
+    font-size: 1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.google-btn:hover {
+    background: #f3f4f6;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.google-btn img {
+    width: 18px;
+    height: 18px;
+}

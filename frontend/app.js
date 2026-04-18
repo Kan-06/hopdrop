@@ -146,6 +146,27 @@ function initApp() {
             input.addEventListener('input', checkTravellerFormValidity);
         });
     }
+
+    // 3. Receiver Flow
+    const receiverForm = document.getElementById('receiver-form');
+    if (receiverForm) {
+        receiverForm.addEventListener('submit', handleReceiverCheck);
+        checkReceiverLoggedIn();
+    }
+}
+
+function checkReceiverLoggedIn() {
+    const userJson = localStorage.getItem('hopdrop_user');
+    if (userJson) {
+        const user = JSON.parse(userJson);
+        const input = document.getElementById('receiver-id-check');
+        const welcome = document.getElementById('receiver-welcome');
+        if (input) {
+            input.value = user.email;
+            welcome.textContent = `Welcome back, ${user.name}! Seeing packages for ${user.email}`;
+            handleReceiverCheck(new Event('submit'));
+        }
+    }
 }
 
 // --- Sender Actions ---
@@ -186,11 +207,12 @@ async function handleFormSubmit(e) {
         pickup_lng: pickupAddress.lon,
         dropoff_lat: destAddress.lat,
         dropoff_lng: destAddress.lon,
-        reward_amount: parseFloat(document.getElementById('payment').value.trim())
+        reward_amount: parseFloat(document.getElementById('payment').value.trim()),
+        receiver_id: document.getElementById('receiver-id').value.trim()
     };
 
     try {
-        const res = await fetch('http://127.0.0.1:8000/packages', {
+        const res = await fetch('/packages', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
@@ -254,7 +276,7 @@ async function handleTravellerSubmit(e) {
     };
 
     try {
-        const routeRes = await fetch('http://127.0.0.1:8000/routes', {
+        const routeRes = await fetch('/routes', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(routePayload)
@@ -264,7 +286,7 @@ async function handleTravellerSubmit(e) {
         const routeData = await routeRes.json();
         const route_id = routeData.route_id;
 
-        const matchRes = await fetch(`http://127.0.0.1:8000/matches/${route_id}`);
+        const matchRes = await fetch(`http://127.0.0.1:8001/matches/${route_id}`);
         const matches = await matchRes.json();
 
         if (matches.length > 0) {
@@ -295,6 +317,97 @@ async function handleTravellerSubmit(e) {
 
     btn.textContent = "Search Packages on Route";
     btn.disabled = false;
+}
+
+async function handleReceiverCheck(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('check-btn');
+    const msg = document.getElementById('check-msg');
+    const results = document.getElementById('receiver-results');
+    const list = document.getElementById('receiver-packages-list');
+    const countBadge = document.getElementById('package-count');
+    const statusLabel = document.getElementById('receiver-status');
+    
+    const receiverId = document.getElementById('receiver-id-check').value.trim();
+    if (!receiverId) return;
+
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = "Updating Dropbox...";
+    }
+    if (statusLabel) statusLabel.textContent = "Fetching...";
+    
+    msg.classList.add('hidden');
+
+    try {
+        const res = await fetch(`http://127.0.0.1:8001/packages/receiver/${encodeURIComponent(receiverId)}`);
+        const packages = await res.json();
+
+        if (packages.length > 0) {
+            if (countBadge) countBadge.textContent = `${packages.length} Found`;
+            list.innerHTML = packages.map(p => `
+                <div class="package-card" data-id="${p.id}">
+                    <div class="package-details">
+                        <h4>${p.pickup_location} → ${p.dropoff_location}</h4>
+                        <div class="package-route">
+                            <span>ID: ${p.id}</span> • <span>Sender: ${p.sender_id}</span>
+                        </div>
+                        <p>Status: <span class="status-badge ${p.status.toLowerCase()}">${p.status}</span></p>
+                    </div>
+                    ${p.status === 'Pending' ? `
+                        <button class="accept-btn" onclick="updatePkgStatus('${p.id}', 'Cancelled')">Cancel</button>
+                    ` : p.status === 'Handover Complete' ? `
+                        <button class="accept-btn" style="border-color:var(--success); color:var(--success);" onclick="updatePkgStatus('${p.id}', 'Received')">Confirm Receipt</button>
+                    ` : ``}
+                </div>
+            `).join('');
+            results.classList.remove('hidden');
+            if (statusLabel) {
+                statusLabel.textContent = "Updated ✓";
+                statusLabel.className = "status-badge valid";
+            }
+        } else {
+            if (countBadge) countBadge.textContent = `0 Found`;
+            list.innerHTML = '';
+            results.classList.add('hidden');
+            msg.textContent = "No packages found for this ID.";
+            msg.className = "form-message error";
+            msg.classList.remove('hidden');
+            if (statusLabel) {
+                statusLabel.textContent = "No packages";
+                statusLabel.className = "status-badge invalid";
+            }
+        }
+    } catch (err) {
+        msg.textContent = "Network error connecting to API.";
+        msg.className = "form-message error";
+        msg.classList.remove('hidden');
+    }
+
+    if (btn) {
+        btn.textContent = "Refresh My Dropbox";
+        btn.disabled = false;
+    }
+}
+
+async function updatePkgStatus(pkgId, newStatus) {
+    if (!confirm(`Are you sure you want to change status to ${newStatus}?`)) return;
+
+    try {
+        const res = await fetch('/update-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ package_id: pkgId, new_status: newStatus })
+        });
+        
+        if (res.ok) {
+            handleReceiverCheck();
+        } else {
+            alert("Failed to update status.");
+        }
+    } catch (err) {
+        alert("Error connecting to server.");
+    }
 }
 
 document.addEventListener('DOMContentLoaded', initApp);
