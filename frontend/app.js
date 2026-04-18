@@ -62,10 +62,22 @@ class AddressInput {
 
     async fetchSuggestions(query) {
         try {
-            // Restrict search to Mangaluru–Karkala region using viewbox + bounded
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=10&viewbox=${REGION_BOUNDS.viewbox}&bounded=1&countrycodes=in`;
+            // Use Photon API for robust autocomplete in the Mangaluru-Karkala region
+            const bbox = `${REGION_BOUNDS.minLon},${REGION_BOUNDS.minLat},${REGION_BOUNDS.maxLon},${REGION_BOUNDS.maxLat}`;
+            const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&bbox=${bbox}&limit=10`;
             const res = await fetch(url);
-            const data = await res.json();
+            const rawData = await res.json();
+            
+            // Format Photon results to match the expected structure
+            const data = (rawData.features || []).map(f => {
+                const p = f.properties;
+                const parts = [p.name, p.street, p.city, p.county, p.state].filter(Boolean);
+                return {
+                    display_name: Array.from(new Set(parts)).join(', '),
+                    lat: f.geometry.coordinates[1],
+                    lon: f.geometry.coordinates[0]
+                };
+            });
 
             this.suggestionsBox.innerHTML = '';
 
