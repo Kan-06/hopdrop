@@ -55,7 +55,7 @@ def create_package(sender_id, receiver_id, pickup_name, dropoff_name, pickup_lat
     """Adds a new package to Firestore with GeoPoints."""
     db = get_db()
     try:
-        doc_ref = db.collection('packages').add({
+        result = db.collection('packages').add({
             'sender_id': sender_id,
             'receiver_id': receiver_id,
             'pickup_location': pickup_name,
@@ -65,7 +65,11 @@ def create_package(sender_id, receiver_id, pickup_name, dropoff_name, pickup_lat
             'reward_amount': reward_amount,
             'status': 'Pending'
         })
-        package_id = doc_ref[1].id
+        # Firestore returns (update_time, doc_ref) or just doc_ref
+        if isinstance(result, tuple):
+            package_id = result[1].id
+        else:
+            package_id = result.id
         print(f"Package created successfully! ID: {package_id}")
         return package_id
     except Exception as e:
@@ -102,14 +106,18 @@ def create_route(traveller_id, start_name, end_name, start_lat, start_lng, end_l
     """Registers a new traveller route with GeoPoints."""
     db = get_db()
     try:
-        doc_ref = db.collection('routes').add({
+        result = db.collection('routes').add({
             'traveller_id': traveller_id,
             'start_point': start_name,
             'end_point': end_name,
             'start_geo': GeoPoint(start_lat, start_lng),
             'end_geo': GeoPoint(end_lat, end_lng)
         })
-        route_id = doc_ref[1].id
+        # Firestore returns (update_time, doc_ref) or just doc_ref
+        if isinstance(result, tuple):
+            route_id = result[1].id
+        else:
+            route_id = result.id
         print(f"Route registered successfully! ID: {route_id}")
         return route_id
     except Exception as e:

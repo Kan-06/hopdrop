@@ -28,7 +28,7 @@
         </div>
 
         <!-- Login Form -->
-        <form id="login-form" class="auth-form active">
+        <form id="login-form" class="auth-form">
             <div class="form-group">
                 <label for="login-email">Email Address</label>
                 <input type="email" id="login-email" placeholder="you@domain.com" required>
@@ -38,14 +38,7 @@
                 <input type="password" id="login-password" placeholder="Enter your password" required>
             </div>
             <div class="form-message hidden" id="login-msg"></div>
-            <button type="submit" class="primary-btn">Sign In</button>
-            
-            <div class="divider"><span>OR</span></div>
-            
-            <button type="button" class="google-btn" id="google-login">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo">
-                Sign in with Google
-            </button>
+            <button type="submit" class="primary-btn" id="login-submit-btn">Sign In</button>
         </form>
 
         <!-- Register Form -->
@@ -67,20 +60,10 @@
                 <input type="password" id="register-confirm-password" placeholder="Confirm your password" required>
             </div>
             <div class="form-message hidden" id="register-msg"></div>
-            <button type="submit" class="primary-btn">Create Account</button>
-
-            <div class="divider"><span>OR</span></div>
-
-            <button type="button" class="google-btn" id="google-register">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google logo">
-                Sign up with Google
-            </button>
+            <button type="submit" class="primary-btn" id="register-submit-btn">Create Account</button>
         </form>
     </div>
 
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="session.js"></script>
     <script src="auth.js"></script>
 </body>
