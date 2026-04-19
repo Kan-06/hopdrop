@@ -11,95 +11,126 @@
         .ac-wrap { position: relative; }
         .sug-box {
             position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-            background: #1a2640; border: 1px solid rgba(6,182,212,.35);
-            border-radius: 12px; max-height: 210px; overflow-y: auto;
-            z-index: 999; box-shadow: 0 12px 30px rgba(0,0,0,.5);
-            animation: fadeDown .15s ease;
+            background: #0d1528; border: 1px solid rgba(0,228,255,.25);
+            border-radius: 16px; max-height: 210px; overflow-y: auto;
+            z-index: 999; box-shadow: 0 20px 40px rgba(0,0,0,.6), 0 0 0 1px rgba(0,228,255,.1);
+            animation: fadeDown .15s cubic-bezier(0.16,1,0.3,1);
         }
         .sug-box.hidden { display: none; }
-        @keyframes fadeDown { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes fadeDown { from { opacity:0; transform:translateY(-8px); } to { opacity:1; transform:translateY(0); } }
         .sug-item {
-            padding: .7rem 1rem; cursor: pointer; font-size: .88rem;
-            border-bottom: 1px solid rgba(255,255,255,.05);
-            display: flex; align-items: center; gap: .5rem;
+            padding: .8rem 1.1rem; cursor: pointer; font-size: .88rem;
+            border-bottom: 1px solid rgba(255,255,255,.04);
+            display: flex; align-items: center; gap: .6rem;
             transition: background .15s;
         }
         .sug-item:last-child { border-bottom: none; }
-        .sug-item:hover:not(.sug-disabled) { background: rgba(6,182,212,.15); }
+        .sug-item:hover:not(.sug-disabled) { background: rgba(0,228,255,.12); }
         .sug-disabled { color: var(--text-muted); cursor: default; font-style: italic; }
         .sug-icon { font-size: .9rem; flex-shrink: 0; }
         .addr-badge {
-            display: inline-block; font-size: .72rem; font-weight: 600;
-            padding: .2rem .55rem; border-radius: 99px; margin-left: .5rem;
-            background: rgba(255,255,255,.08); color: var(--text-muted);
-            vertical-align: middle; transition: all .2s;
+            display: inline-block; font-size: .7rem; font-weight: 700;
+            padding: .18rem .55rem; border-radius: 99px; margin-left: .4rem;
+            background: rgba(255,255,255,.07); color: var(--text-muted);
+            vertical-align: middle; transition: all .25s; letter-spacing: .3px;
         }
-        .addr-badge.valid { background: rgba(34,197,94,.18); color: var(--success); }
+        .addr-badge.valid { background: rgba(16,185,129,.2); color: #10b981; }
+
+        /* ── Premium Tabs ─────────────────────────────────────────────── */
+        .tab-bar {
+            display: flex; gap: 0; margin-bottom: 2.5rem;
+            background: rgba(0,0,0,.3); border-radius: 16px; padding: .35rem;
+            border: 1px solid rgba(255,255,255,.06);
+        }
+        .tab-btn {
+            flex: 1; background: transparent; border: none;
+            color: var(--text-muted); font-size: .95rem; font-weight: 700;
+            cursor: pointer; padding: .75rem; border-radius: 12px;
+            transition: all .3s cubic-bezier(0.16,1,0.3,1);
+            display: flex; align-items: center; justify-content: center; gap: .5rem;
+        }
+        .tab-btn.active {
+            background: linear-gradient(135deg, var(--primary), #b800e6);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255,46,147,.35);
+        }
+        .tab-btn:hover:not(.active) { color: white; background: rgba(255,255,255,.06); }
+
+        /* ── Section Cards ────────────────────────────────────────────── */
+        .form-section-card {
+            background: rgba(255,255,255,.025);
+            border: 1px solid rgba(255,255,255,.07);
+            border-radius: 20px; padding: 1.5rem 1.75rem;
+            margin-bottom: 1.25rem;
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.05);
+            transition: border-color .3s;
+        }
+        .form-section-card:focus-within {
+            border-color: rgba(0,228,255,.25);
+            box-shadow: inset 0 1px 0 rgba(255,255,255,.05), 0 0 0 1px rgba(0,228,255,.1);
+        }
+        .section-chip {
+            display: inline-flex; align-items: center; gap: .45rem;
+            font-size: .72rem; font-weight: 800; text-transform: uppercase;
+            letter-spacing: 1.2px; padding: .3rem .8rem; border-radius: 99px;
+            margin-bottom: 1.2rem;
+        }
+        .chip-cyan  { background: rgba(0,228,255,.12); color: var(--secondary); border: 1px solid rgba(0,228,255,.2); }
+        .chip-pink  { background: rgba(255,46,147,.12); color: var(--primary);   border: 1px solid rgba(255,46,147,.2); }
+        .chip-purple{ background: rgba(168,85,247,.12); color: #c084fc;          border: 1px solid rgba(168,85,247,.2); }
 
         /* ── Photo capture ────────────────────────────────────────────── */
         .photo-block {
-            background: rgba(255,255,255,.04); border: 1.5px dashed rgba(255,255,255,.15);
-            border-radius: 14px; padding: 1.25rem; text-align: center;
+            background: rgba(0,0,0,.2); border: 1.5px dashed rgba(255,255,255,.1);
+            border-radius: 16px; padding: 1.5rem; text-align: center;
+            transition: border-color .3s;
         }
+        .photo-block:hover { border-color: rgba(0,228,255,.3); }
         .photo-btn {
-            background: transparent; border: 1px solid var(--secondary);
-            color: var(--secondary); padding: .55rem 1.2rem; border-radius: 10px;
-            cursor: pointer; font-size: .9rem; font-weight: 600; transition: all .2s;
-            display: inline-flex; align-items: center; gap: .4rem;
+            background: rgba(0,228,255,.08); border: 1px solid rgba(0,228,255,.3);
+            color: var(--secondary); padding: .65rem 1.4rem; border-radius: 12px;
+            cursor: pointer; font-size: .95rem; font-weight: 700; transition: all .25s;
+            display: inline-flex; align-items: center; gap: .5rem;
         }
-        .photo-btn:hover { background: rgba(6,182,212,.15); }
+        .photo-btn:hover { background: rgba(0,228,255,.18); transform: translateY(-1px); }
         .photo-preview {
             width: 100%; max-height: 220px; object-fit: cover;
-            border-radius: 10px; margin-top: 1rem; display: none;
-            border: 1px solid var(--glass-border);
+            border-radius: 14px; margin-top: 1rem; display: none;
+            border: 1px solid rgba(255,255,255,.1);
+            box-shadow: 0 8px 20px rgba(0,0,0,.4);
         }
-        .photo-label { font-size: .82rem; color: var(--text-muted); margin-top: .5rem; }
-
-        /* ── Section divider ─────────────────────────────────────────── */
-        .section-title {
-            font-size: .78rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1.5px; color: var(--secondary); margin: 1.75rem 0 1rem;
-            display: flex; align-items: center; gap: .6rem;
-        }
-        .section-title::after {
-            content: ''; flex: 1; height: 1px;
-            background: rgba(6,182,212,.25);
-        }
+        .photo-label { font-size: .8rem; color: var(--text-muted); margin-top: .6rem; }
 
         /* ── Success card ────────────────────────────────────────────── */
         .success-card {
-            background: rgba(34,197,94,.07); border: 1px solid rgba(34,197,94,.3);
-            border-radius: 16px; padding: 2rem; text-align: center;
+            background: rgba(16,185,129,.06); border: 1px solid rgba(16,185,129,.25);
+            border-radius: 20px; padding: 2.5rem; text-align: center;
+            box-shadow: 0 0 40px rgba(16,185,129,.08);
         }
-        .pkg-id-display {
-            font-size: 2rem; font-weight: 800; letter-spacing: 4px;
-            color: var(--success); margin: 1rem 0;
-            font-family: 'Courier New', monospace;
-        }
-        .copy-btn {
-            background: rgba(34,197,94,.15); border: 1px solid rgba(34,197,94,.4);
-            color: var(--success); padding: .45rem 1rem; border-radius: 8px;
-            cursor: pointer; font-size: .85rem; font-weight: 600;
-            transition: all .2s;
-        }
-        .copy-btn:hover { background: rgba(34,197,94,.25); }
 
-        /* ── Tabs & Tracking ─────────────────────────────────────────── */
-        .tab-bar { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid rgba(255,255,255,.1); }
-        .tab-btn { background: none; border: none; color: var(--text-muted); font-size: 1rem; font-weight: 600; cursor: pointer; padding: .5rem 1rem; transition: .2s; margin-bottom: -1px; }
-        .tab-btn.active { color: var(--secondary); border-bottom: 2px solid var(--secondary); }
-        .tab-btn:hover:not(.active) { color: white; border-bottom: 2px solid rgba(255,255,255,.2); }
-        
-        .pkg-card { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem; text-align: left; }
+        /* ── Tracking cards ──────────────────────────────────────────── */
+        .pkg-card {
+            background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.08);
+            border-radius: 16px; padding: 1.25rem 1.4rem; margin-bottom: 1rem;
+            text-align: left; transition: all .3s;
+        }
+        .pkg-card:hover { border-color: rgba(0,228,255,.25); background: rgba(255,255,255,.06); }
         .pkg-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-        .pkg-id { font-family: monospace; font-size: 1.1rem; color: var(--secondary); }
-        .status-badge { padding: .3rem .6rem; border-radius: 99px; font-size: .75rem; font-weight: 700; text-transform: uppercase; }
-        .status-pending { background: rgba(234,179,8,.15); color: #facc15; }
-        .status-accepted { background: rgba(59,130,246,.15); color: #60a5fa; }
-        .status-delivered { background: rgba(34,197,94,.15); color: #4ade80; }
-        .status-paid { background: rgba(168,85,247,.15); color: #c084fc; }
-        .pay-btn { background: var(--success); color: #111; padding: .5rem 1rem; border-radius: 8px; font-weight: 700; cursor: pointer; border: none; margin-top: 1rem; width: 100%; transition: .2s; }
-        .pay-btn:hover { background: #22c55e; }
+        .pkg-id { font-family: 'Courier New', monospace; font-size: 1rem; color: var(--secondary); font-weight: 700; letter-spacing: 2px; }
+        .status-badge { padding: .3rem .7rem; border-radius: 99px; font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+        .status-pending  { background: rgba(245,158,11,.15); color: #fbbf24; }
+        .status-accepted { background: rgba(0,228,255,.15); color: var(--secondary); }
+        .status-in-transit { background: rgba(168,85,247,.15); color: #c084fc; }
+        .status-delivered { background: rgba(16,185,129,.15); color: #34d399; }
+        .status-paid { background: rgba(255,46,147,.15); color: var(--primary); }
+        .pay-btn {
+            background: linear-gradient(135deg, #10b981, #059669); color: white;
+            padding: .65rem 1.2rem; border-radius: 12px; font-weight: 800;
+            cursor: pointer; border: none; margin-top: 1rem; width: 100%;
+            transition: all .3s cubic-bezier(0.34,1.56,.64,1);
+            box-shadow: 0 6px 15px rgba(16,185,129,.3);
+        }
+        .pay-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(16,185,129,.4); }
     </style>
 </head>
 <body>
@@ -109,7 +140,7 @@
         <div class="orb orb-yellow"></div>
     </div>
 
-    <div class="container glass-panel form-layout" style="max-width:680px;">
+    <div class="container glass-panel form-layout" style="max-width:720px;">
         <nav class="top-nav">
             <h1 class="logo">Hop<span>Drop</span></h1>
         </nav>
@@ -117,88 +148,90 @@
 
         <!-- ── Tabs ─────────────────────────────────────────────────── -->
         <div class="tab-bar">
-            <button class="tab-btn active" id="tab-create" onclick="switchTab('create')">Send Package</button>
-            <button class="tab-btn" id="tab-track" onclick="switchTab('track')">Track & Pay</button>
+            <button class="tab-btn active" id="tab-create" onclick="switchTab('create')">📦 Send Package</button>
+            <button class="tab-btn" id="tab-track" onclick="switchTab('track')">🔍 Track &amp; Pay</button>
         </div>
 
         <!-- ── Form ─────────────────────────────────────────────────── -->
         <div id="form-section">
-            <div class="form-header">
-                <h2>Send a Package</h2>
-                <p>Fill in your details — a traveller going your way will carry it.</p>
+            <div class="form-header" style="margin-bottom:1.75rem;">
+                <h2 style="font-size:2rem;">Send a Package</h2>
+                <p style="color:var(--text-muted);margin-top:.35rem;">Fill in the details — a verified traveller on your route will carry it.</p>
             </div>
 
             <form id="sender-form" novalidate>
 
-                <!-- Sender info -->
-                <div class="section-title">Your Details</div>
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="sender_name">Your Name</label>
-                        <input type="text" id="sender_name" placeholder="e.g. Rahul Shetty" required>
+                <!-- Sender info card -->
+                <div class="form-section-card">
+                    <div class="section-chip chip-cyan">👤 Your Details</div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="sender_name">Your Name</label>
+                            <input type="text" id="sender_name" placeholder="e.g. Rahul Shetty" required>
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="phone">Your Phone</label>
+                            <input type="tel" id="phone" placeholder="9876543210" maxlength="10" required>
+                        </div>
                     </div>
-                    <div class="form-group flex-1">
-                        <label for="phone">Your Phone</label>
-                        <input type="tel" id="phone" placeholder="9876543210" maxlength="10" required>
-                    </div>
-                </div>
-
-                <!-- Sender address -->
-                <div class="form-group ac-wrap">
-                    <label for="sender_address">
-                        Pickup Address
-                        <span class="addr-badge" id="sender_address-badge">Type to search</span>
-                    </label>
-                    <input type="text" id="sender_address" placeholder="Start typing — e.g. Karkala Bus Stand…" autocomplete="off" required>
-                    <div id="sender_address-sug" class="sug-box hidden"></div>
-                </div>
-
-                <!-- Receiver info -->
-                <div class="section-title">Receiver Details</div>
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="receiver_name">Receiver Name</label>
-                        <input type="text" id="receiver_name" placeholder="e.g. Priya D'Souza">
-                    </div>
-                    <div class="form-group flex-1">
-                        <label for="receiver_phone">Receiver Phone <span style="color:var(--text-muted);font-size:.8rem;">(for tracking)</span></label>
-                        <input type="tel" id="receiver_phone" placeholder="9123456789" maxlength="10">
+                    <!-- Pickup address inside sender card -->
+                    <div class="form-group ac-wrap" style="margin-bottom:0;">
+                        <label for="sender_address">
+                            📍 Pickup Address
+                            <span class="addr-badge" id="sender_address-badge">Type to search</span>
+                        </label>
+                        <input type="text" id="sender_address" placeholder="Start typing — e.g. Karkala Bus Stand…" autocomplete="off" required>
+                        <div id="sender_address-sug" class="sug-box hidden"></div>
                     </div>
                 </div>
 
-                <!-- Receiver address -->
-                <div class="form-group ac-wrap">
-                    <label for="receiver_address">
-                        Delivery Address
-                        <span class="addr-badge" id="receiver_address-badge">Type to search</span>
-                    </label>
-                    <input type="text" id="receiver_address" placeholder="Start typing — e.g. Mangalore City Centre…" autocomplete="off" required>
-                    <div id="receiver_address-sug" class="sug-box hidden"></div>
+                <!-- Receiver info card -->
+                <div class="form-section-card">
+                    <div class="section-chip chip-pink">🎁 Receiver Details</div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="receiver_name">Receiver Name</label>
+                            <input type="text" id="receiver_name" placeholder="e.g. Priya D'Souza">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="receiver_phone">Phone <span style="color:var(--text-muted);font-size:.78rem;">(for WhatsApp notify)</span></label>
+                            <input type="tel" id="receiver_phone" placeholder="9123456789" maxlength="10">
+                        </div>
+                    </div>
+                    <div class="form-group ac-wrap" style="margin-bottom:0;">
+                        <label for="receiver_address">
+                            🏁 Delivery Address
+                            <span class="addr-badge" id="receiver_address-badge">Type to search</span>
+                        </label>
+                        <input type="text" id="receiver_address" placeholder="Start typing — e.g. Mangalore City Centre…" autocomplete="off" required>
+                        <div id="receiver_address-sug" class="sug-box hidden"></div>
+                    </div>
                 </div>
 
-                <!-- Package details -->
-                <div class="section-title">Package Details</div>
-                <div class="form-row">
-                    <div class="form-group flex-1">
-                        <label for="description">Item Description</label>
-                        <input type="text" id="description" placeholder="e.g. Documents, medicines…">
+                <!-- Package details card -->
+                <div class="form-section-card">
+                    <div class="section-chip chip-purple">📦 Package Info</div>
+                    <div class="form-row">
+                        <div class="form-group flex-1">
+                            <label for="description">Item Description</label>
+                            <input type="text" id="description" placeholder="e.g. Documents, medicines…">
+                        </div>
+                        <div class="form-group flex-1">
+                            <label for="reward">Traveller Reward (₹) <span style="color:var(--secondary);font-size:.78rem;">min ₹50</span></label>
+                            <input type="number" id="reward" placeholder="e.g. 50" min="50" step="1" required>
+                        </div>
                     </div>
-                    <div class="form-group flex-1">
-                        <label for="reward">Reward for Traveller (₹)</label>
-                        <input type="number" id="reward" placeholder="e.g. 50" min="1" step="1" required>
-                    </div>
-                </div>
-
-                <!-- Package photo -->
-                <div class="form-group">
-                    <label>Package Photo <span style="color:var(--text-muted);font-size:.8rem;">(optional — for safety verification)</span></label>
-                    <div class="photo-block">
-                        <button type="button" class="photo-btn" id="pkg-photo-btn">
-                            📷 Take / Upload Photo
-                        </button>
-                        <input type="file" id="pkg-photo-input" accept="image/*" capture="environment" hidden>
-                        <img id="pkg-photo-preview" class="photo-preview" alt="Package photo">
-                        <p class="photo-label">Photo helps the traveller identify your package and proves its condition.</p>
+                    <!-- Photo upload inside package card -->
+                    <div class="form-group" style="margin-bottom:0;">
+                        <label>Package Photo <span style="color:var(--text-muted);font-size:.78rem;">(optional — proof of condition)</span></label>
+                        <div class="photo-block">
+                            <button type="button" class="photo-btn" id="pkg-photo-btn">
+                                📷 Take / Upload Photo
+                            </button>
+                            <input type="file" id="pkg-photo-input" accept="image/*" capture="environment" hidden>
+                            <img id="pkg-photo-preview" class="photo-preview" alt="Package photo">
+                            <p class="photo-label">Helps the traveller identify your package.</p>
+                        </div>
                     </div>
                 </div>
 
@@ -210,20 +243,24 @@
             </form>
         </div>
 
+
+
         <!-- ── Success state ─────────────────────────────────────────── -->
         <div id="success-section" class="hidden">
-            <div class="success-card">
-                <div style="font-size:3rem; margin-bottom:.5rem;">🎉</div>
-                <h2 style="margin-bottom:.5rem;">Package Created!</h2>
-                <p style="color:var(--text-muted); margin-bottom:.5rem;">Package ID:</p>
-                <div class="pkg-id-display" id="pkg-id-display">——</div>
-
-                <!-- WhatsApp notify receiver -->
-                <div id="wa-receiver-wrap" style="margin-top:1rem;"></div>
-
-                <p style="color:var(--text-muted); font-size:.82rem; margin-top:.75rem;">
-                    The receiver will get the package ID and tracking link via WhatsApp.
+            <div class="success-card" style="text-align:center;">
+                <div style="font-size:4rem; margin-bottom:.75rem; filter:drop-shadow(0 0 20px #22c55e);">🎉</div>
+                <h2 style="font-size:1.8rem; margin-bottom:.5rem;">Package Created!</h2>
+                <p style="color:var(--text-muted); margin-bottom:1.5rem; font-size:.95rem;">
+                    Your package has been listed. A traveller on the route will pick it up soon.
                 </p>
+
+                <!-- WhatsApp notify receiver — Big prominent CTA -->
+                <div id="wa-receiver-wrap"></div>
+
+                <div id="no-phone-warn" class="hidden" style="background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:12px; padding:1rem; margin-top:1rem; font-size:.85rem; color:#fca5a5;">
+                    ⚠️ You didn't enter a receiver phone number — the receiver cannot be notified via WhatsApp.
+                    <br>Share the Package ID manually: <strong id="pkg-id-inline" style="color:var(--secondary);"></strong>
+                </div>
             </div>
             <button class="primary-btn" style="margin-top:1.5rem;" onclick="resetForm()">➕ Send Another Package</button>
         </div>
@@ -265,9 +302,8 @@
 
         // ── Session check ───────────────────────────────────────────────
         const session = hdRequire('Sender');
-        if (session) {
-            hdBar('user-bar');
-            // Pre-fill sender fields from account
+        if (session) hdBar('user-bar');
+
         // ── Address Autocomplete + Photo (inside DOMContentLoaded) ────────
         let acSender, acReceiver;
         document.addEventListener('DOMContentLoaded', () => {
@@ -303,6 +339,9 @@
             if (!sname || !phone || !reward) {
                 showMsg('Please fill in all required fields.', 'error'); return;
             }
+            if (parseFloat(reward) < 50) {
+                showMsg('Minimum reward is ₹50. Please increase the reward amount.', 'error'); return;
+            }
             if (!sndr.address) { showMsg('Please enter a pickup address.', 'error'); return; }
             if (!rcvr.address) { showMsg('Please enter a delivery address.', 'error'); return; }
 
@@ -337,28 +376,58 @@
                     savedReceiverName  = payload.receiver_name || 'there';
                     savedSenderName    = payload.sender_name;
 
-                    document.getElementById('pkg-id-display').textContent = createdPkgId;
                     document.getElementById('form-section').classList.add('hidden');
                     document.getElementById('success-section').classList.remove('hidden');
 
-                    // Build WhatsApp button for receiver
+                    // ── Auto-build WhatsApp button (big + instant) ──────────
                     const waWrap = document.getElementById('wa-receiver-wrap');
+                    document.getElementById('no-phone-warn').classList.add('hidden');
+
                     if (savedReceiverPhone) {
-                        const waMsg = `Hi ${savedReceiverName}! 📦\n${savedSenderName} has sent you a package via HopDrop.\n\nPackage ID: ${createdPkgId}\n\nTo track: Open HopDrop → Sign in as Receiver → Enter this Package ID.`;
+                        const trackUrl = `${window.location.origin}/receiver.html`;
+                        const waMsg =
+`📦 *HopDrop Package Alert!*
+
+Hi ${savedReceiverName}! 👋
+*${savedSenderName}* has sent you a package.
+
+🆔 *Package ID:* ${createdPkgId}
+📍 Pickup: ${payload.sender_address}
+🏁 Delivery: ${payload.receiver_address}
+📦 Item: ${payload.description || 'Not specified'}
+
+🔍 *Track your package here:*
+${trackUrl}
+
+_(Log in as Receiver → enter Package ID or tap "View All")_
+
+Powered by *HopDrop* 🚀`;
                         const waUrl = `https://wa.me/91${savedReceiverPhone}?text=${encodeURIComponent(waMsg)}`;
                         waWrap.innerHTML = `
+                        <div style="background:rgba(37,211,102,.08);border:1.5px solid rgba(37,211,102,.3);border-radius:18px;padding:1.5rem;text-align:center;">
+                            <div style="font-size:2.5rem;margin-bottom:.5rem;">💬</div>
+                            <p style="font-weight:700;font-size:1.1rem;margin-bottom:.25rem;">Notify Receiver Instantly</p>
+                            <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:1rem;">Tap below to send the Package ID & tracking link directly on WhatsApp</p>
                             <a href="${waUrl}" target="_blank"
-                               style="display:inline-flex;align-items:center;gap:.5rem;
-                                      background:#25d366;color:white;border:none;
-                                      padding:.7rem 1.4rem;border-radius:12px;
-                                      font-weight:700;font-size:.95rem;
-                                      text-decoration:none;transition:filter .2s;"
-                               onmouseover="this.style.filter='brightness(1.1)'"
-                               onmouseout="this.style.filter='none'">
-                                💬 Notify Receiver on WhatsApp
-                            </a>`;
+                               style="display:inline-flex;align-items:center;gap:.75rem;
+                                      background:linear-gradient(135deg,#25d366,#128C7E);
+                                      color:white;border-radius:14px;
+                                      padding:.9rem 2rem;font-weight:800;font-size:1.05rem;
+                                      text-decoration:none;box-shadow:0 8px 20px rgba(37,211,102,.35);
+                                      transition:all .3s cubic-bezier(0.34,1.56,0.64,1);"
+                               onmouseover="this.style.transform='translateY(-3px) scale(1.03)'"
+                               onmouseout="this.style.transform=''"
+                            >
+                                <svg width="22" height="22" viewBox="0 0 24 24" fill="white"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                                Send WhatsApp to Receiver
+                            </a>
+                        </div>`;
+                        // ── Auto-open WhatsApp after short delay ──
+                        setTimeout(() => window.open(waUrl, '_blank'), 800);
                     } else {
-                        waWrap.innerHTML = `<p style="font-size:.83rem;color:var(--text-muted);">⚠ No receiver phone entered — they cannot be notified via WhatsApp.</p>`;
+                        document.getElementById('no-phone-warn').classList.remove('hidden');
+                        document.getElementById('pkg-id-inline').textContent = createdPkgId;
+                        waWrap.innerHTML = '';
                     }
                 } else {
                     showMsg(data.error || 'Failed to create package.', 'error');
@@ -388,12 +457,14 @@
             document.getElementById('success-section').classList.add('hidden');
             document.getElementById('track-section').classList.add('hidden');
             document.getElementById('form-section').classList.remove('hidden');
-            // Re-apply session fields (form.reset() clears them)
+            // ── Re-fill session details after form.reset() wipes them ──
             if (session) {
-                document.getElementById('sender_name').value    = session.name;
+                document.getElementById('sender_name').value   = session.name;
                 document.getElementById('sender_name').readOnly = true;
-                document.getElementById('phone').value          = session.phone;
-                document.getElementById('phone').readOnly       = true;
+                document.getElementById('sender_name').style.opacity = '.7';
+                document.getElementById('phone').value         = session.phone;
+                document.getElementById('phone').readOnly      = true;
+                document.getElementById('phone').style.opacity = '.7';
             }
         }
 
@@ -505,5 +576,7 @@
             }
         }
     </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three-bg.js"></script>
 </body>
 </html>

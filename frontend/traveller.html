@@ -256,11 +256,18 @@ const API = 'http://127.0.0.1:5000';
 const session = hdRequire('Traveller');
 if (session) hdBar('user-bar');
 
-/* ─── Session state (sessionStorage-backed so refresh keeps accepted packages) ─ */
-function _cg(k) { try { return JSON.parse(sessionStorage.getItem(k) || '{}'); } catch { return {}; } }
-function _cs(k, o) { sessionStorage.setItem(k, JSON.stringify(o)); }
-const acceptedCache  = new Proxy(_cg('hd_acc'), { set(t,k,v){ t[k]=v; _cs('hd_acc',t);  return true; } });
-const deliveredCache = new Proxy(_cg('hd_del'), { set(t,k,v){ t[k]=v; _cs('hd_del',t); return true; } });
+/* ─── Persistent cache (survives logout via localStorage) ───────────────── */
+const ACCEPTED_KEY  = 'hd_accepted_cache';
+const DELIVERED_KEY = 'hd_delivered_cache';
+
+function _loadCache(key)      { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch { return {}; } }
+function _saveCache(key, obj) { localStorage.setItem(key, JSON.stringify(obj)); }
+
+const acceptedCache  = _loadCache(ACCEPTED_KEY);   // pkgId -> sender contact info
+const deliveredCache = _loadCache(DELIVERED_KEY);  // pkgId -> earnings info
+
+function setAccepted(pkgId, data)  { acceptedCache[pkgId]  = data; _saveCache(ACCEPTED_KEY,  acceptedCache); }
+function setDelivered(pkgId, data) { deliveredCache[pkgId] = data; _saveCache(DELIVERED_KEY, deliveredCache); }
 
 /* ─── Filter autocomplete ────────────────────────────────────────────────── */
 // Initialized inside DOMContentLoaded to ensure DOM is ready
@@ -535,7 +542,7 @@ function startAccept(pkgId) {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    acceptedCache[pkgId] = data;
+                    setAccepted(pkgId, data);   // ← persisted to localStorage
                     await loadPackages();
                     await loadWallet();
                 } else {
@@ -598,9 +605,51 @@ function startComplete(pkgId) {
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    deliveredCache[pkgId] = data;
+                    setDelivered(pkgId, data);   // ← persisted to localStorage
                     await loadPackages();
                     await loadWallet();
+
+                    // ── WhatsApp Receiver notification after delivery ──
+                    const cache = acceptedCache[pkgId];
+                    if (cache && cache.receiver_phone) {
+                        const waMsg =
+`✅ *Package Delivered! 🎉*
+
+Hi ${cache.receiver_name || 'there'}! Your package has been delivered by your HopDrop Traveller.
+
+🆔 *Package ID:* ${pkgId}
+📦 Item: ${cache.description || 'Package'}
+
+_Delivered successfully. Please check and confirm receipt._
+
+Thank you for using *HopDrop* 🚀`;
+                        const waUrl = `https://wa.me/91${cache.receiver_phone}?text=${encodeURIComponent(waMsg)}`;
+
+                        // Show a toast/modal with the WA button
+                        const notifyDiv = document.createElement('div');
+                        notifyDiv.style.cssText = `
+                            position:fixed;bottom:2rem;right:2rem;z-index:9999;
+                            background:linear-gradient(135deg,#25d366,#128C7E);
+                            color:white;border-radius:18px;padding:1.25rem 1.5rem;
+                            box-shadow:0 12px 30px rgba(37,211,102,.4);
+                            display:flex;align-items:center;gap:1rem;max-width:320px;
+                            animation:slideUpFade .4s cubic-bezier(0.16,1,0.3,1);
+                        `;
+                        notifyDiv.innerHTML = `
+                            <div style="font-size:2.5rem">💬</div>
+                            <div>
+                                <div style="font-weight:800;font-size:1rem;margin-bottom:.25rem;">🎉 Delivery Complete!</div>
+                                <div style="font-size:.85rem;opacity:.9;margin-bottom:.75rem;">Notify the receiver on WhatsApp?</div>
+                                <a href="${waUrl}" target="_blank" style="display:inline-block;background:white;color:#128C7E;border-radius:10px;padding:.5rem 1.1rem;font-weight:800;font-size:.9rem;text-decoration:none;">✅ Send WhatsApp</a>
+                                <button onclick="this.closest('div[style]').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);cursor:pointer;margin-left:.5rem;font-size:.85rem;">Dismiss</button>
+                            </div>
+                        `;
+                        document.body.appendChild(notifyDiv);
+                        setTimeout(() => notifyDiv.remove(), 15000); // auto-dismiss after 15s
+
+                        // Also auto-open WhatsApp
+                        setTimeout(() => window.open(waUrl, '_blank'), 500);
+                    }
                 } else {
                     alert(data.error || 'Could not complete delivery.');
                     if (btn) { btn.disabled = false; btn.textContent = '🏁 Complete Delivery'; }
@@ -703,5 +752,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadWallet();
 });
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="three-bg.js"></script>
 </body>
 </html>

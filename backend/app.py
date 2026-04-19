@@ -169,6 +169,13 @@ def create_package():
         if not data.get(field):
             return jsonify({'error': f'Missing field: {field}'}), 400
 
+    try:
+        reward = float(data['reward'])
+    except (ValueError, TypeError):
+        return jsonify({'error': 'Reward must be a number.'}), 400
+    if reward < 50:
+        return jsonify({'error': 'Minimum reward is ₹50.'}), 400
+
     # UUID collision guard
     pkg_id = str(uuid.uuid4())[:8].upper()
     while pkg_id in packages:
