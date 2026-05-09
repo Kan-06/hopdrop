@@ -559,7 +559,7 @@ function startAccept(pkgId) {
 
 /* ─── Confirm Pickup flow (OTP) ──────────────────────────────────────────── */
 async function startPickup(pkgId) {
-    const otp = prompt("SECURE CHAIN: Pickup Phase\n\nPlease ask the Sender for their 4-digit Pickup OTP:\n\n(Hint for demo: 1234)");
+    const otp = prompt("SECURE CHAIN: Pickup Phase\n\nPlease ask the Sender for their 4-digit Pickup OTP.");
     if (!otp) return;
     
     const btn = document.querySelector(`#card-${pkgId} .btn-accept`);
@@ -587,7 +587,7 @@ async function startPickup(pkgId) {
 
 /* ─── Complete delivery flow ─────────────────────────────────────────────── */
 function startComplete(pkgId) {
-    const otp = prompt("SECURE CHAIN: Delivery Phase\n\nPlease ask the Receiver for their 4-digit Delivery OTP:\n\n(Hint for demo: 9876)");
+    const otp = prompt("SECURE CHAIN: Delivery Phase\n\nPlease ask the Receiver for their 4-digit Delivery OTP.");
     if (!otp) return;
 
     openModal(

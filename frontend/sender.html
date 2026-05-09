@@ -257,6 +257,14 @@
                 <!-- WhatsApp notify receiver — Big prominent CTA -->
                 <div id="wa-receiver-wrap"></div>
 
+                <div id="otp-panel" style="margin-top:1.25rem; background:rgba(0,228,255,.06); border:1px solid rgba(0,228,255,.2); border-radius:14px; padding:1rem; text-align:left;">
+                    <div style="font-weight:800; margin-bottom:.35rem;">🔐 OTPs for this delivery</div>
+                    <div style="font-size:.9rem; color:var(--text-muted); line-height:1.7;">
+                        Pickup OTP (share with traveller): <strong id="pickup-otp" style="color:var(--secondary);"></strong><br>
+                        Delivery OTP (share with receiver): <strong id="delivery-otp" style="color:var(--secondary);"></strong>
+                    </div>
+                </div>
+
                 <div id="no-phone-warn" class="hidden" style="background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.3); border-radius:12px; padding:1rem; margin-top:1rem; font-size:.85rem; color:#fca5a5;">
                     ⚠️ You didn't enter a receiver phone number — the receiver cannot be notified via WhatsApp.
                     <br>Share the Package ID manually: <strong id="pkg-id-inline" style="color:var(--secondary);"></strong>
@@ -299,6 +307,8 @@
         let savedReceiverPhone = '';
         let savedReceiverName  = '';
         let savedSenderName    = '';
+        let pickupOtp = '';
+        let deliveryOtp = '';
 
         // ── Session check ───────────────────────────────────────────────
         const session = hdRequire('Sender');
@@ -375,6 +385,11 @@
                     savedReceiverPhone = payload.receiver_phone;
                     savedReceiverName  = payload.receiver_name || 'there';
                     savedSenderName    = payload.sender_name;
+                    pickupOtp          = data.pickup_otp || '';
+                    deliveryOtp        = data.delivery_otp || '';
+
+                    document.getElementById('pickup-otp').textContent = pickupOtp || '—';
+                    document.getElementById('delivery-otp').textContent = deliveryOtp || '—';
 
                     document.getElementById('form-section').classList.add('hidden');
                     document.getElementById('success-section').classList.remove('hidden');
@@ -385,6 +400,7 @@
 
                     if (savedReceiverPhone) {
                         const trackUrl = `${window.location.origin}/receiver.html`;
+                        const otpLine = deliveryOtp ? `\n🔐 *Delivery OTP:* ${deliveryOtp}\n` : '';
                         const waMsg =
 `📦 *HopDrop Package Alert!*
 
@@ -395,6 +411,7 @@ Hi ${savedReceiverName}! 👋
 📍 Pickup: ${payload.sender_address}
 🏁 Delivery: ${payload.receiver_address}
 📦 Item: ${payload.description || 'Not specified'}
+${otpLine}
 
 🔍 *Track your package here:*
 ${trackUrl}
@@ -457,6 +474,8 @@ Powered by *HopDrop* 🚀`;
             document.getElementById('success-section').classList.add('hidden');
             document.getElementById('track-section').classList.add('hidden');
             document.getElementById('form-section').classList.remove('hidden');
+            document.getElementById('pickup-otp').textContent = '';
+            document.getElementById('delivery-otp').textContent = '';
             // ── Re-fill session details after form.reset() wipes them ──
             if (session) {
                 document.getElementById('sender_name').value   = session.name;
@@ -518,6 +537,13 @@ Powered by *HopDrop* 🚀`;
                     const el = document.createElement('div');
                     el.className = 'pkg-card';
                     
+                    const otpInfo = (p.pickup_otp || p.delivery_otp) ? `
+                        <div style="font-size:.85rem; color:var(--text-muted); margin-top:.5rem; line-height:1.6;">
+                            <strong>Pickup OTP:</strong> <span style="color:var(--secondary);">${p.pickup_otp || '—'}</span><br>
+                            <strong>Delivery OTP:</strong> <span style="color:var(--secondary);">${p.delivery_otp || '—'}</span>
+                        </div>
+                    ` : '';
+
                     let payBtn = '';
                     if (p.status === 'delivered') {
                         payBtn = `<button class="pay-btn" onclick="payPackage('${p.id}', ${p.reward})">💳 Pay ₹${p.reward}</button>`;
@@ -536,6 +562,7 @@ Powered by *HopDrop* 🚀`;
                             <strong>Item:</strong> ${p.description || 'N/A'} <br>
                             <strong>Reward:</strong> ₹${p.reward}
                         </div>
+                        ${otpInfo}
                         ${payBtn}
                     `;
                     list.appendChild(el);

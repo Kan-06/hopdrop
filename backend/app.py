@@ -12,6 +12,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import Dict, Any
 import os
+import secrets
 import uuid
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -62,6 +63,10 @@ def _clean_phone(value):
 
 def _is_password_hash(value: str) -> bool:
     return isinstance(value, str) and (value.startswith('scrypt:') or value.startswith('pbkdf2:'))
+
+
+def _generate_otp() -> str:
+    return str(secrets.randbelow(10000)).zfill(4)
 
 
 
@@ -225,8 +230,15 @@ def create_package():
         'accepted_by':      None,
         'pickup_photo':     '',
         'delivery_photo':   '',
+        'pickup_otp':       _generate_otp(),
+        'delivery_otp':     _generate_otp(),
     }
-    return jsonify({'package_id': pkg_id, 'message': 'Package created successfully'}), 201
+    return jsonify({
+        'package_id': pkg_id,
+        'message': 'Package created successfully',
+        'pickup_otp': packages[pkg_id]['pickup_otp'],
+        'delivery_otp': packages[pkg_id]['delivery_otp'],
+    }), 201
 
 
 # ── 2. Match Packages (pending) ────────────────────────────────────────────────
@@ -321,7 +333,8 @@ def confirm_pickup():
     if pkg['status'] != 'accepted':
         return jsonify({'error': f"Package must be 'accepted' first, currently {pkg['status']}"}), 400
 
-    if str(otp) != '1234':
+    expected_otp = pkg.get('pickup_otp') or '1234'
+    if str(otp) != str(expected_otp):
         return jsonify({'error': 'Invalid Pickup OTP. Get the 4-digit OTP from the sender.'}), 400
 
     pkg['status'] = 'in-transit'
@@ -351,8 +364,10 @@ def complete_delivery():
     if pkg['status'] not in ('accepted', 'in-transit'):
         return jsonify({'error': f'Cannot deliver from status: {pkg["status"]}'}), 400
 
-    # OTP optional — if provided must match
-    if otp and str(otp) != '9876':
+    expected_otp = pkg.get('delivery_otp') or '9876'
+    if not otp:
+        return jsonify({'error': 'Delivery OTP is required.'}), 400
+    if str(otp) != str(expected_otp):
         return jsonify({'error': 'Invalid Delivery OTP. Get the 4-digit OTP from the receiver.'}), 400
 
     pkg['status'] = 'delivered'
@@ -499,6 +514,8 @@ def sender_packages():
                 'package_photo':    p.get('package_photo', ''),
                 'pickup_photo':     p.get('pickup_photo', ''),
                 'delivery_photo':   p.get('delivery_photo', ''),
+                'pickup_otp':       p.get('pickup_otp', ''),
+                'delivery_otp':     p.get('delivery_otp', ''),
             })
     return jsonify(result)
 
