@@ -35,6 +35,30 @@ def health():
     return jsonify({'status': 'ok'})
 
 
+def _get_json():
+    data = request.get_json(silent=True)
+    return data if isinstance(data, dict) else None
+
+
+def _missing_fields(data, fields):
+    return [f for f in fields if not data.get(f)]
+
+
+def _as_str(value):
+    return str(value).strip() if value is not None else ''
+
+
+def _parse_float(value):
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _clean_phone(value):
+    return ''.join(filter(str.isdigit, _as_str(value)))
+
+
 
 
 # ── Wallet helpers ─────────────────────────────────────────────────────────────
@@ -58,10 +82,12 @@ def get_wallet(name):
 
 @app.route('/top-up', methods=['POST'])
 def top_up():
-    data   = request.get_json()
-    name   = data.get('traveller_name', '')
-    amount = float(data.get('amount', 0))
-    if not name or amount <= 0:
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    name = _as_str(data.get('traveller_name'))
+    amount = _parse_float(data.get('amount'))
+    if not name or amount is None or amount <= 0:
         return jsonify({'error': 'Invalid name or amount'}), 400
     user = get_or_create_wallet(name)
     user['wallet_balance'] += amount
@@ -71,8 +97,10 @@ def top_up():
 
 @app.route('/verify-identity', methods=['POST'])
 def verify_identity():
-    data = request.get_json()
-    name = data.get('traveller_name', '')
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    name = _as_str(data.get('traveller_name'))
     if not name:
         return jsonify({'error': 'Invalid name'}), 400
     user = get_or_create_wallet(name)
@@ -84,20 +112,22 @@ def verify_identity():
 # ── Auth: Register ─────────────────────────────────────────────────────────────
 @app.route('/register', methods=['POST'])
 def register():
-    data = request.get_json()
-    for field in ['name', 'phone', 'password', 'role']:
-        if not data.get(field):
-            return jsonify({'error': f'Missing field: {field}'}), 400
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    missing = _missing_fields(data, ['name', 'phone', 'password', 'role'])
+    if missing:
+        return jsonify({'error': f'Missing field: {missing[0]}'}), 400
 
-    phone = data['phone'].strip()
+    phone = _as_str(data.get('phone'))
     if phone in users:
         return jsonify({'error': 'Phone already registered. Please sign in.'}), 409
 
     users[phone] = {
-        'name':           data['name'].strip(),
+        'name':           _as_str(data.get('name')),
         'phone':          phone,
-        'password':       data['password'],
-        'role':           data['role'],
+        'password':       _as_str(data.get('password')),
+        'role':           _as_str(data.get('role')),
         'wallet_balance': 150.0,
         'locked_balance': 0.0,
         'transactions':   [],
@@ -112,10 +142,12 @@ def register():
 # ── Auth: Login ────────────────────────────────────────────────────────────────
 @app.route('/login', methods=['POST'])
 def login():
-    data     = request.get_json()
-    phone    = data.get('phone', '').strip()
-    password = data.get('password', '').strip()
-    role     = data.get('role', '').strip()
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    phone    = _as_str(data.get('phone'))
+    password = _as_str(data.get('password'))
+    role     = _as_str(data.get('role'))
 
     if not phone or not password:
         return jsonify({'error': 'Phone and password are required.'}), 400
@@ -137,14 +169,15 @@ def login():
 # ── 1. Create Package ──────────────────────────────────────────────────────────
 @app.route('/create-package', methods=['POST'])
 def create_package():
-    data = request.get_json()
-    for field in ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward']:
-        if not data.get(field):
-            return jsonify({'error': f'Missing field: {field}'}), 400
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    missing = _missing_fields(data, ['sender_name', 'phone', 'sender_address', 'receiver_address', 'reward'])
+    if missing:
+        return jsonify({'error': f'Missing field: {missing[0]}'}), 400
 
-    try:
-        reward = float(data['reward'])
-    except (ValueError, TypeError):
+    reward = _parse_float(data.get('reward'))
+    if reward is None:
         return jsonify({'error': 'Reward must be a number.'}), 400
     if reward < 50:
         return jsonify({'error': 'Minimum reward is ₹50.'}), 400
@@ -204,9 +237,14 @@ def match_packages():
 # ── 3. Accept Package (Traveller → locks ₹50 deposit) ────────────────────────
 @app.route('/accept-package', methods=['POST'])
 def accept_package():
-    data           = request.get_json()
-    pkg_id         = data.get('package_id', '').upper()
-    traveller_name = data.get('traveller_name', 'Traveller')
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    pkg_id = _as_str(data.get('package_id')).upper()
+    traveller_name = _as_str(data.get('traveller_name')) or 'Traveller'
+
+    if not pkg_id:
+        return jsonify({'error': 'Missing field: package_id'}), 400
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -248,9 +286,14 @@ def accept_package():
 # ── 3b. Confirm Pickup (OTP from Sender) ──────────────────────────────────────
 @app.route('/confirm-pickup', methods=['POST'])
 def confirm_pickup():
-    data   = request.get_json()
-    pkg_id = data.get('package_id', '').upper()
-    otp    = data.get('otp', '')
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    pkg_id = _as_str(data.get('package_id')).upper()
+    otp    = _as_str(data.get('otp'))
+
+    if not pkg_id or not otp:
+        return jsonify({'error': 'Missing field: package_id or otp'}), 400
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -272,9 +315,14 @@ def confirm_pickup():
 # ── 4. Complete Delivery (OTP from Receiver) ───────────────────────────────────
 @app.route('/complete-delivery', methods=['POST'])
 def complete_delivery():
-    data   = request.get_json()
-    pkg_id = data.get('package_id', '').upper()
-    otp    = data.get('otp', '')
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    pkg_id = _as_str(data.get('package_id')).upper()
+    otp    = _as_str(data.get('otp'))
+
+    if not pkg_id:
+        return jsonify({'error': 'Missing field: package_id'}), 400
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -317,9 +365,16 @@ def complete_delivery():
 # ── 4b. Cancel Delivery (Penalty) ──────────────────────────────────────────────
 @app.route('/cancel-delivery', methods=['POST'])
 def cancel_delivery():
-    data           = request.get_json()
-    pkg_id         = data.get('package_id', '').upper()
-    penalty_amount = float(data.get('penalty', LOCK_AMOUNT))
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    pkg_id = _as_str(data.get('package_id')).upper()
+    penalty_amount = _parse_float(data.get('penalty', LOCK_AMOUNT))
+
+    if not pkg_id:
+        return jsonify({'error': 'Missing field: package_id'}), 400
+    if penalty_amount is None:
+        return jsonify({'error': 'Penalty must be a number.'}), 400
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -346,8 +401,13 @@ def cancel_delivery():
 # ── 5. Pay for Package (Sender pays after delivery) ────────────────────────────
 @app.route('/pay-package', methods=['POST'])
 def pay_package():
-    data   = request.get_json()
-    pkg_id = data.get('package_id', '').upper()
+    data = _get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON payload'}), 400
+    pkg_id = _as_str(data.get('package_id')).upper()
+
+    if not pkg_id:
+        return jsonify({'error': 'Missing field: package_id'}), 400
 
     if pkg_id not in packages:
         return jsonify({'error': 'Package not found'}), 404
@@ -372,14 +432,14 @@ def pay_package():
 # ── 6. Receiver — look up packages by phone ────────────────────────────────────
 @app.route('/receiver-packages', methods=['GET'])
 def receiver_packages():
-    phone = request.args.get('phone', '').strip()
+    phone = _clean_phone(request.args.get('phone'))
     if not phone:
         return jsonify({'error': 'phone param required'}), 400
     
-    clean_query = ''.join(filter(str.isdigit, phone))
+    clean_query = phone
     result = []
     for p in packages.values():
-        rec_phone = ''.join(filter(str.isdigit, p.get('receiver_phone', '')))
+        rec_phone = _clean_phone(p.get('receiver_phone'))
         if rec_phone and clean_query and (clean_query in rec_phone or rec_phone in clean_query):
             result.append({
                 'id':               p['id'],
@@ -400,14 +460,14 @@ def receiver_packages():
 # ── 7. Sender — look up own packages by phone ──────────────────────────────────
 @app.route('/sender-packages', methods=['GET'])
 def sender_packages():
-    phone = request.args.get('phone', '').strip()
+    phone = _clean_phone(request.args.get('phone'))
     if not phone:
         return jsonify({'error': 'phone query param required'}), 400
         
-    clean_query = ''.join(filter(str.isdigit, phone))
+    clean_query = phone
     result = []
     for p in packages.values():
-        sender_phone = ''.join(filter(str.isdigit, p.get('phone', '')))
+        sender_phone = _clean_phone(p.get('phone'))
         if sender_phone and clean_query and (clean_query in sender_phone or sender_phone in clean_query):
             result.append({
                 'id':               p['id'],
