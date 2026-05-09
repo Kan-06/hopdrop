@@ -1,6 +1,6 @@
 # HopDrop
 
-HopDrop is a peer-to-peer delivery prototype focused on the Mangaluru-Karkala corridor. It supports three roles (Sender, Traveller, Receiver) with a single-page-style web UI and a Flask backend that simulates wallets, deposits, OTP verification, and payments.
+HopDrop is a crowd-powered smart parcel delivery platform that enables travellers already commuting on a route to deliver packages efficiently while earning micro-income. The platform focuses on solving last-mile delivery challenges in underserved regions through route-based matching, OTP verification, and real-time delivery coordination.
 
 ## What it does
 - Sender creates a package with pickup and dropoff addresses, optional photo proof, and a reward amount.
