@@ -1,6 +1,6 @@
 # HopDrop
 
-HopDrop is a crowd-powered smart parcel delivery platform that enables travellers already commuting on a route to deliver packages efficiently while earning micro-income. The platform focuses on solving last-mile delivery challenges in underserved regions through route-based matching, OTP verification, and real-time delivery coordination.
+HopDrop is a crowd-powered smart parcel delivery prototype focused on the Mangaluru-Karkala corridor. It supports three roles (Sender, Traveller, Receiver) with a modern web UI and a Flask backend that simulates wallets, deposits, OTP verification, and payments.
 
 ## What it does
 - Sender creates a package with pickup and dropoff addresses, optional photo proof, and a reward amount.
@@ -23,12 +23,9 @@ HopDrop is a crowd-powered smart parcel delivery platform that enables traveller
 
 ## Project structure
 ```
-HF26-01/
+hopdrop/
   backend/
     app.py            # Flask backend (main API)
-    database.py       # Firestore mock/optional (not used by app.py)
-    auth.py           # Firestore auth (not used by app.py)
-    server.py         # FastAPI backend (legacy/alt)
   frontend/
     index.html        # Role selection + login/register
     dashboard.html    # Role landing page
@@ -39,6 +36,9 @@ HF26-01/
     session.js
     autocomplete.js
     three-bg.js
+  legacy/
+    backend/          # Archived Firestore/FastAPI prototypes
+    frontend/         # Archived experimental scripts
 ```
 
 ## How to run
@@ -46,7 +46,7 @@ HF26-01/
 Use a Python virtual environment if possible.
 
 ```bash
-pip install flask flask-cors
+pip install -r requirements.txt
 ```
 
 ### 2) Start the Flask backend
@@ -67,9 +67,10 @@ http://127.0.0.1:5000/
 
 The Flask server serves `frontend/index.html` as the default page.
 
-## Demo OTP values
-- Pickup OTP: `1234`
-- Delivery OTP: `9876`
+## OTP behavior (demo)
+- Pickup and delivery OTPs are generated per package.
+- The sender sees both OTPs after creating a package and in the sender tracking view.
+- The receiver only needs the delivery OTP, shared by the sender.
 
 ## API summary (Flask)
 Base URL: http://127.0.0.1:5000
@@ -98,16 +99,21 @@ Base URL: http://127.0.0.1:5000
 - `GET /receiver-packages?phone=...`
 - `GET /packages`
 
+## Render deployment
+- The app is configured for Render via render.yaml.
+- Render runs gunicorn with the Flask app at backend.app:app and binds to $PORT.
+- Health check endpoint: /health
+
 ## Notes and limitations
 - All data is stored in memory and resets when the server restarts.
 - Payments and OTPs are simulated for demo purposes.
-- The FastAPI + Firestore backend in `backend/server.py` is not used by the current UI flow.
+- Legacy FastAPI/Firebase prototypes are preserved in legacy/ for reference.
 
 ## Suggested demo flow
 1) Register as Sender and create a package.
 2) Copy the Package ID or send WhatsApp message to Receiver.
 3) Register as Traveller and accept the package (deposit locks in wallet).
-4) Confirm pickup with OTP `1234`.
-5) Complete delivery with OTP `9876`.
+4) Confirm pickup with the Pickup OTP from the sender.
+5) Complete delivery with the Delivery OTP shared by the sender.
 6) As Sender, pay the reward after delivery.
 7) As Receiver, track the package status and proof photos.
