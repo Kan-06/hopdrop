@@ -207,6 +207,13 @@ def create_package():
     if missing:
         return jsonify({'error': f'Missing field: {missing[0]}'}), 400
 
+    phone = _clean_phone(data.get('phone'))
+    receiver_phone = _clean_phone(data.get('receiver_phone'))
+    if len(phone) != 10:
+        return jsonify({'error': 'Sender phone must be 10 digits.'}), 400
+    if receiver_phone and len(receiver_phone) != 10:
+        return jsonify({'error': 'Receiver phone must be 10 digits.'}), 400
+
     reward = _parse_float(data.get('reward'))
     if reward is None:
         return jsonify({'error': 'Reward must be a number.'}), 400
@@ -221,12 +228,12 @@ def create_package():
     packages[pkg_id] = {
         'id':               pkg_id,
         'sender_name':      data['sender_name'],
-        'phone':            data['phone'],          # sender phone
+        'phone':            phone,          # sender phone
         'sender_address':   data['sender_address'],
         'sender_lat':       data.get('sender_lat'),
         'sender_lng':       data.get('sender_lng'),
         'receiver_name':    data.get('receiver_name', ''),
-        'receiver_phone':   data.get('receiver_phone', ''),
+        'receiver_phone':   receiver_phone,
         'receiver_address': data['receiver_address'],
         'receiver_lat':     data.get('receiver_lat'),
         'receiver_lng':     data.get('receiver_lng'),
