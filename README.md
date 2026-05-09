@@ -1,119 +1,117 @@
 # HopDrop
 
-HopDrop is a crowd-powered smart parcel delivery prototype focused on the Mangaluru-Karkala corridor. It supports three roles (Sender, Traveller, Receiver) with a modern web UI and a Flask backend that simulates wallets, deposits, OTP verification, and payments.
+HopDrop is a crowd-powered smart parcel delivery prototype for the Mangaluru-Karkala corridor. It models how trusted travelers can carry packages along routes while senders and receivers verify handoffs with OTPs and proof photos.
 
-## What it does
-- Sender creates a package with pickup and dropoff addresses, optional photo proof, and a reward amount.
-- Traveller browses available packages, accepts one (locks a small deposit), confirms pickup with an OTP, and completes delivery with an OTP to earn rewards.
-- Receiver tracks a package by ID or phone and sees status plus proof photos.
+## Why it matters
+- Uses existing travel to reduce delivery friction and cost.
+- Adds lightweight trust controls (deposit lock, OTPs, proof photos).
+- Demonstrates a realistic, end-to-end logistics workflow.
 
-## Core features
-- Role-based login (Sender, Traveller, Receiver)
-- Package creation, tracking, and payment flow
-- Traveller wallet with top-ups, deposit locking, and earnings
-- OTP-based pickup and delivery verification (demo values)
-- Address autocomplete constrained to the Mangaluru-Karkala region
-- WhatsApp message shortcuts for sender/receiver notifications
-- Proof photos for package condition, pickup, and delivery
+## Feature highlights
+- Role-based flows for Sender, Traveller, and Receiver.
+- Wallet model with deposit lock and reward payout.
+- Per-package pickup and delivery OTP verification.
+- Proof photos for pickup and delivery.
+- Region-limited address autocomplete.
+- WhatsApp share flows for real-world notifications.
+- Render-ready deployment configuration.
 
-## Tech stack
-- Backend: Python + Flask
-- Frontend: HTML, CSS, vanilla JavaScript
-- Storage: in-memory demo data (no external database required)
+## Architecture overview
+```mermaid
+flowchart LR
+  U[Users] --> FE[Frontend (HTML/CSS/JS)]
+  FE -->|Same-origin fetch| API[Flask API]
+  API --> DATA[In-memory stores]
+  API --> WALLET[Wallet + OTP logic]
+  API --> STATIC[Static assets]
+```
+
+## Workflow
+### Sender
+1. Register or sign in.
+2. Create a package with pickup and delivery details.
+3. Receive pickup and delivery OTPs.
+4. Share the delivery OTP with the receiver.
+5. Pay the reward after delivery.
+
+### Traveller
+1. Browse available packages on a route.
+2. Accept a package (deposit is locked in the wallet).
+3. Confirm pickup with the pickup OTP.
+4. Complete delivery with the delivery OTP.
+
+### Receiver
+1. Track by package ID or phone number.
+2. View status updates and proof photos.
+
+## Local development
+```bash
+pip install -r requirements.txt
+python backend/app.py
+```
+Open http://127.0.0.1:5000
+
+## Deployment (Render)
+- render.yaml configures the service and health check at /health.
+- runtime.txt pins the Python version for consistent builds.
+- The frontend uses same-origin API calls, so no host changes are needed.
+
+## API summary
+### Auth
+- POST /register
+- POST /login
+
+### Sender
+- POST /create-package
+- GET /sender-packages?phone=...
+- POST /pay-package
+
+### Traveller
+- GET /match-packages?route=...
+- POST /accept-package
+- POST /confirm-pickup
+- POST /complete-delivery
+- POST /cancel-delivery
+- GET /wallet/<name>
+- POST /top-up
+- POST /verify-identity
+
+### Receiver
+- GET /package/<id>
+- GET /receiver-packages?phone=...
+- GET /packages
+
+## Screenshots
+Place screenshots in docs/screenshots/ and update this section:
+- landing.png
+- sender-flow.png
+- traveller-flow.png
+- receiver-tracking.png
+- payment-confirmation.png
 
 ## Project structure
 ```
 hopdrop/
   backend/
-    app.py            # Flask backend (main API)
+    app.py
   frontend/
-    index.html        # Role selection + login/register
-    dashboard.html    # Role landing page
-    sender.html       # Sender flow
-    traveller.html    # Traveller flow
-    receiver.html     # Receiver flow
+    index.html
+    dashboard.html
+    sender.html
+    traveller.html
+    receiver.html
     styles.css
     session.js
     autocomplete.js
     three-bg.js
   legacy/
-    backend/          # Archived Firestore/FastAPI prototypes
-    frontend/         # Archived experimental scripts
+    backend/
+    frontend/
+  docs/
+    screenshots/
 ```
-
-## How to run
-### 1) Install dependencies
-Use a Python virtual environment if possible.
-
-```bash
-pip install -r requirements.txt
-```
-
-### 2) Start the Flask backend
-Run from the project root or backend directory:
-
-```bash
-python backend/app.py
-```
-
-The API runs on http://127.0.0.1:5000
-
-### 3) Open the UI
-Open `frontend/index.html` in your browser or visit:
-
-```
-http://127.0.0.1:5000/
-```
-
-The Flask server serves `frontend/index.html` as the default page.
-
-## OTP behavior (demo)
-- Pickup and delivery OTPs are generated per package.
-- The sender sees both OTPs after creating a package and in the sender tracking view.
-- The receiver only needs the delivery OTP, shared by the sender.
-
-## API summary (Flask)
-Base URL: http://127.0.0.1:5000
-
-### Auth
-- `POST /register`
-- `POST /login`
-
-### Sender
-- `POST /create-package`
-- `GET /sender-packages?phone=...`
-- `POST /pay-package`
-
-### Traveller
-- `GET /match-packages?route=...`
-- `POST /accept-package`
-- `POST /confirm-pickup`
-- `POST /complete-delivery`
-- `POST /cancel-delivery`
-- `GET /wallet/<name>`
-- `POST /top-up`
-- `POST /verify-identity`
-
-### Receiver
-- `GET /package/<id>`
-- `GET /receiver-packages?phone=...`
-- `GET /packages`
-
-## Render deployment
-- The app is configured for Render via render.yaml.
-- Render runs gunicorn with the Flask app at backend.app:app and binds to $PORT.
-- Health check endpoint: /health
 
 ## Notes and limitations
 - All data is stored in memory and resets when the server restarts.
-- Payments and OTPs are simulated for demo purposes.
+- Payments are simulated for demo purposes.
 - Legacy FastAPI/Firebase prototypes are preserved in legacy/ for reference.
-
-## Suggested demo flow
-1) Register as Sender and create a package.
-2) Copy the Package ID or send WhatsApp message to Receiver.
-3) Register as Traveller and accept the package (deposit locks in wallet).
-4) Confirm pickup with the Pickup OTP from the sender.
-5) Complete delivery with the Delivery OTP shared by the sender.
-6) As Sender, pay the reward after delivery.
-7) As Receiver, track the package status and proof photos.
