@@ -13,6 +13,7 @@ from flask_cors import CORS
 from typing import Dict, Any
 import os
 import uuid
+from werkzeug.security import generate_password_hash, check_password_hash
 
 FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
 app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
@@ -57,6 +58,10 @@ def _parse_float(value):
 
 def _clean_phone(value):
     return ''.join(filter(str.isdigit, _as_str(value)))
+
+
+def _is_password_hash(value: str) -> bool:
+    return isinstance(value, str) and (value.startswith('scrypt:') or value.startswith('pbkdf2:'))
 
 
 
@@ -119,14 +124,19 @@ def register():
     if missing:
         return jsonify({'error': f'Missing field: {missing[0]}'}), 400
 
-    phone = _as_str(data.get('phone'))
+    phone = _clean_phone(data.get('phone'))
+    password = _as_str(data.get('password'))
+    if len(phone) != 10:
+        return jsonify({'error': 'Phone must be 10 digits.'}), 400
+    if len(password) < 6:
+        return jsonify({'error': 'Password must be at least 6 characters.'}), 400
     if phone in users:
         return jsonify({'error': 'Phone already registered. Please sign in.'}), 409
 
     users[phone] = {
         'name':           _as_str(data.get('name')),
         'phone':          phone,
-        'password':       _as_str(data.get('password')),
+        'password':       generate_password_hash(password),
         'role':           _as_str(data.get('role')),
         'wallet_balance': 150.0,
         'locked_balance': 0.0,
@@ -145,18 +155,27 @@ def login():
     data = _get_json()
     if not data:
         return jsonify({'error': 'Invalid JSON payload'}), 400
-    phone    = _as_str(data.get('phone'))
+    phone    = _clean_phone(data.get('phone'))
     password = _as_str(data.get('password'))
     role     = _as_str(data.get('role'))
 
     if not phone or not password:
         return jsonify({'error': 'Phone and password are required.'}), 400
+    if len(phone) != 10:
+        return jsonify({'error': 'Phone must be 10 digits.'}), 400
 
     user = users.get(phone)
     if not user:
         return jsonify({'error': 'Account not found. Please register first.'}), 404
-    if user.get('password') and user['password'] != password:
-        return jsonify({'error': 'Incorrect password.'}), 401
+    stored_password = user.get('password', '')
+    if stored_password:
+        if _is_password_hash(stored_password):
+            if not check_password_hash(stored_password, password):
+                return jsonify({'error': 'Incorrect password.'}), 401
+        else:
+            if stored_password != password:
+                return jsonify({'error': 'Incorrect password.'}), 401
+            user['password'] = generate_password_hash(password)
     if role and user.get('role', '').lower() != role.lower():
         return jsonify({
             'error': f'This account is registered as a {user.get("role","unknown")}. Please select the correct role.'
