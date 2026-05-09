@@ -11,9 +11,11 @@ Combines:
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from typing import Dict, Any
+import os
 import uuid
 
-app = Flask(__name__, static_folder='../frontend', static_url_path='')
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), '..', 'frontend')
+app = Flask(__name__, static_folder=FRONTEND_DIR, static_url_path='')
 CORS(app)
 
 # ── In-memory stores ───────────────────────────────────────────────────────────
@@ -26,6 +28,11 @@ LOCK_AMOUNT = 50.0              # ₹50 deposit locked when traveller accepts
 @app.route('/')
 def index():
     return app.send_static_file('index.html')
+
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({'status': 'ok'})
 
 
 
@@ -445,4 +452,5 @@ def all_packages():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    port = int(os.getenv('PORT', '5000'))
+    app.run(host='0.0.0.0', port=port)
