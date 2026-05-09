@@ -74,6 +74,7 @@
         .sp-pending  { background: rgba(234,179,8,.15);  color: var(--warning); }
         .sp-accepted { background: rgba(6,182,212,.15);  color: var(--secondary); }
         .sp-delivered{ background: rgba(34,197,94,.15);  color: var(--success); }
+        .sp-paid     { background: rgba(255,46,147,.15); color: var(--primary); }
 
         /* Proof photos */
         .proof-photos { display: flex; gap: 1rem; margin-top: .75rem; flex-wrap: wrap; }
@@ -254,13 +255,14 @@ async function loadAllMyPackages() {
 
 /* ── Timeline HTML ────────────────────────────────────────────────────── */
 function timeline(status) {
+    const normalized = status === 'paid' ? 'delivered' : status;
     const steps  = [
         { key: 'pending',   label: 'Created',  icon: '📦' },
         { key: 'accepted',  label: 'Picked Up', icon: '🚗' },
         { key: 'delivered', label: 'Delivered', icon: '🎁' },
     ];
     const order   = { pending: 0, accepted: 1, delivered: 2 };
-    const current = order[status] ?? 0;
+    const current = order[normalized] ?? 0;
     let html = '<div class="timeline">';
     steps.forEach((s, i) => {
         const o      = order[s.key];
@@ -278,7 +280,7 @@ function timeline(status) {
 
 /* ── Render a package card ────────────────────────────────────────────── */
 function renderCard(p) {
-    const sCls = { pending:'sp-pending', accepted:'sp-accepted', delivered:'sp-delivered' }[p.status] || 'sp-pending';
+    const sCls = { pending:'sp-pending', accepted:'sp-accepted', delivered:'sp-delivered', paid:'sp-paid' }[p.status] || 'sp-pending';
 
     const proofHtml = `
     <div class="proof-photos">
