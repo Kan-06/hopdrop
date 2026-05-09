@@ -69,6 +69,13 @@ def _generate_otp() -> str:
     return str(secrets.randbelow(10000)).zfill(4)
 
 
+def _public_package_view(pkg: Dict[str, Any]) -> Dict[str, Any]:
+    public = dict(pkg)
+    public.pop('pickup_otp', None)
+    public.pop('delivery_otp', None)
+    return public
+
+
 
 
 # ── Wallet helpers ─────────────────────────────────────────────────────────────
@@ -544,7 +551,7 @@ def get_package(pkg_id):
 # ── 9. All packages (debug) ────────────────────────────────────────────────────
 @app.route('/packages', methods=['GET'])
 def all_packages():
-    return jsonify(list(packages.values()))
+    return jsonify([_public_package_view(p) for p in packages.values()])
 
 
 if __name__ == '__main__':
