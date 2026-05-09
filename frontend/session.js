@@ -4,11 +4,18 @@
  */
 
 const HD_KEY = 'hopdrop_session';
+const HD_API_KEY = 'hopdrop_api_base';
 const HD_PAGES = { Sender: 'sender.html', Traveller: 'traveller.html', Receiver: 'receiver.html' };
 
 function hdGet()   { try { return JSON.parse(localStorage.getItem(HD_KEY)); } catch(e) { return null; } }
 function hdSet(u)  { localStorage.setItem(HD_KEY, JSON.stringify(u)); }
 function hdClear() { localStorage.removeItem(HD_KEY); window.location.href = 'index.html'; }
+
+function hdApiBase() {
+    const explicit = window.HD_API_BASE || localStorage.getItem(HD_API_KEY);
+    if (explicit) return explicit.replace(/\/$/, '');
+    return window.location.origin;
+}
 
 /**
  * Require a logged-in session with the given role.
