@@ -118,3 +118,10 @@ hopdrop/
 - All data is stored in memory and resets when the server restarts.
 - Payments are simulated for demo purposes.
 - Legacy FastAPI/Firebase prototypes are preserved in legacy/ for reference.
+
+
+## License
+
+Licensed under the Apache License 2.0.
+
+© 2026 Kanishk Hegde. Please do not redistribute or present this project as your own work without attribution.
