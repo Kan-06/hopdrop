@@ -37,7 +37,7 @@
 }
 
 body {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Space Grotesk', 'Inter', system-ui, -apple-system, sans-serif;
     background-color: var(--bg);
     color: var(--text);
     min-height: 100vh;
@@ -360,7 +360,7 @@ input, textarea {
     border-radius: 14px;
     color: var(--text);
     font-size: 1.05rem;
-    font-family: 'Inter', sans-serif;
+    font-family: inherit;
     outline: none;
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
     transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
@@ -502,8 +502,12 @@ input:focus:not(:read-only), textarea:focus:not(:read-only) {
 }
 
 @media (max-width: 640px) {
+    body { padding: 1.25rem; }
+    header { margin-bottom: 2rem; }
+    .user-profile { position: static; margin-bottom: 1rem; }
     .form-row { flex-direction: column; gap: 0; }
     .glass-panel { padding: 2rem; border-radius: 20px; }
+    .cards-wrapper { gap: 1.25rem; }
 }
 
 /* ── Auth Tabs Elegance ── */
