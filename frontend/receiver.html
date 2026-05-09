@@ -95,6 +95,12 @@
 
         /* ── Hint box ────────────────────────────────────────────────── */
         .hint-box { background: rgba(6,182,212,.06); border: 1px dashed rgba(6,182,212,.25); border-radius: 12px; padding: .85rem 1rem; font-size: .83rem; color: var(--secondary); line-height: 1.6; text-align: center; margin-bottom: 1.25rem; }
+
+        @media (max-width: 640px) {
+            .track-row { flex-direction: column; }
+            .btn-track { width: 100%; }
+            .all-pkgs-btn { width: 100%; }
+        }
     </style>
 </head>
 <body>

@@ -56,6 +56,11 @@
         }
         .tab-btn:hover:not(.active) { color: white; background: rgba(255,255,255,.06); }
 
+        @media (max-width: 640px) {
+            .tab-bar { flex-direction: column; }
+            .tab-btn { width: 100%; }
+        }
+
         /* ── Section Cards ────────────────────────────────────────────── */
         .form-section-card {
             background: rgba(255,255,255,.025);
@@ -282,7 +287,7 @@
             <div class="form-group">
                 <input type="tel" id="track_phone" placeholder="Enter your phone number (e.g. 9876543210)" maxlength="10">
             </div>
-            <button class="primary-btn" onclick="fetchSenderPackages()">🔍 Find My Packages</button>
+            <button class="primary-btn" id="track-btn" onclick="fetchSenderPackages()">🔍 Find My Packages</button>
             <div id="track-msg" class="form-message hidden" style="margin-top:1rem;"></div>
             <div id="pkg-list" style="margin-top:2rem;"></div>
             <div id="payment-success-modal" class="hidden" style="margin-top:2rem; text-align:center; padding:2rem; background:rgba(168,85,247,.1); border:1px solid rgba(168,85,247,.3); border-radius:12px;">
@@ -325,6 +330,10 @@
                 document.getElementById('phone').value          = session.phone;
                 document.getElementById('phone').readOnly       = true;
                 document.getElementById('phone').style.opacity  = '.7';
+                const trackPhone = document.getElementById('track_phone');
+                if (trackPhone && !trackPhone.value) {
+                    trackPhone.value = session.phone;
+                }
             }
             acSender   = new AddressAutoComplete('sender_address',   'sender_address-sug',   () => {});
             acReceiver = new AddressAutoComplete('receiver_address', 'receiver_address-sug', () => {});
@@ -349,6 +358,13 @@
             if (!sname || !phone || !reward) {
                 showMsg('Please fill in all required fields.', 'error'); return;
             }
+            if (phone.length !== 10) {
+                showMsg('Phone must be 10 digits.', 'error'); return;
+            }
+            const receiverPhone = document.getElementById('receiver_phone').value.trim();
+            if (receiverPhone && receiverPhone.length !== 10) {
+                showMsg('Receiver phone must be 10 digits.', 'error'); return;
+            }
             if (parseFloat(reward) < 50) {
                 showMsg('Minimum reward is ₹50. Please increase the reward amount.', 'error'); return;
             }
@@ -364,7 +380,7 @@
                 sender_lat:       sndr.lat,
                 sender_lng:       sndr.lng,
                 receiver_name:    document.getElementById('receiver_name').value.trim(),
-                receiver_phone:   document.getElementById('receiver_phone').value.trim(),
+                receiver_phone:   receiverPhone,
                 receiver_address: rcvr.address,
                 receiver_lat:     rcvr.lat,
                 receiver_lng:     rcvr.lng,
@@ -500,8 +516,11 @@ Powered by *HopDrop* 🚀`;
                 document.getElementById('form-section').classList.add('hidden');
                 document.getElementById('success-section').classList.add('hidden');
                 document.getElementById('track-section').classList.remove('hidden');
-                
-                if (session && document.getElementById('track_phone').value) {
+                const trackPhone = document.getElementById('track_phone');
+                if (session && trackPhone && !trackPhone.value) {
+                    trackPhone.value = session.phone;
+                }
+                if (session && trackPhone && trackPhone.value) {
                     fetchSenderPackages();
                 }
             }
@@ -511,20 +530,23 @@ Powered by *HopDrop* 🚀`;
             const phone = document.getElementById('track_phone').value.trim();
             const msg = document.getElementById('track-msg');
             const list = document.getElementById('pkg-list');
+            const btn = document.getElementById('track-btn');
             document.getElementById('payment-success-modal').classList.add('hidden');
 
             msg.className = 'form-message hidden';
             list.innerHTML = '';
 
-            if (phone.length < 10) {
+            const cleanPhone = phone.replace(/\D/g, '');
+            if (cleanPhone.length !== 10) {
                 msg.textContent = 'Please enter a valid phone number.';
                 msg.className = 'form-message error';
                 return;
             }
+            if (btn) { btn.disabled = true; btn.textContent = 'Fetching…'; }
             msg.textContent = 'Fetching…';
             msg.className = 'form-message';
             try {
-                const res = await fetch(`${API}/sender-packages?phone=${phone}`);
+                const res = await fetch(`${API}/sender-packages?phone=${cleanPhone}`);
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.error);
                 
@@ -546,7 +568,7 @@ Powered by *HopDrop* 🚀`;
 
                     let payBtn = '';
                     if (p.status === 'delivered') {
-                        payBtn = `<button class="pay-btn" onclick="payPackage('${p.id}', ${p.reward})">💳 Pay ₹${p.reward}</button>`;
+                        payBtn = `<button class="pay-btn" onclick="payPackage(this, '${p.id}', ${p.reward})">💳 Pay ₹${p.reward}</button>`;
                     }
                     
                     el.innerHTML = `
@@ -570,11 +592,12 @@ Powered by *HopDrop* 🚀`;
             } catch(e) {
                 msg.textContent = e.message || 'Network error.';
                 msg.className = 'form-message error';
+            } finally {
+                if (btn) { btn.disabled = false; btn.textContent = '🔍 Find My Packages'; }
             }
         }
 
-        async function payPackage(pkgId, amount) {
-            const btn = event.target;
+        async function payPackage(btn, pkgId, amount) {
             btn.textContent = 'Processing...';
             btn.disabled = true;
             try {

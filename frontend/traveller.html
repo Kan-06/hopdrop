@@ -157,6 +157,13 @@
         .wallet-value { font-size: 1.2rem; font-weight: 700; color: var(--text); display: flex; align-items: center; gap: 0.5rem; }
         .wallet-value.success { color: var(--success); }
         .wallet-value.warning { color: var(--warning); }
+
+        @media (max-width: 640px) {
+            body { padding: 1.25rem; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .btn-refresh { width: 100%; justify-content: center; }
+            .wallet-box { align-items: flex-start; }
+        }
     </style>
 </head>
 <body>

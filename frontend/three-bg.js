@@ -1,5 +1,9 @@
 /* ── Three.js Interactive Premium Background ── */
 (function initThreeJSBackground() {
+    const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReduced || window.innerWidth < 720 || !window.THREE) {
+        return;
+    }
     // 1. Create native canvas element
     const canvas = document.createElement('canvas');
     canvas.id = 'three-canvas';
