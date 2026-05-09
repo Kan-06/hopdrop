@@ -166,8 +166,8 @@ async function trackById() {
     area.innerHTML = `<div class="empty-state"><div class="icon">⏳</div><p>Looking up <strong>${cleaned}</strong>…</p></div>`;
 
     try {
-        // ── Case 1: 10-digit number → phone lookup ─────────────────────
-        if (/^\d{10}$/.test(cleaned)) {
+        // ── Case 1: Phone lookup (10-15 digits, handles country codes) ─
+        if (/^\d{10,15}$/.test(cleaned)) {
             const res  = await fetch(`${API}/receiver-packages?phone=${encodeURIComponent(cleaned)}`);
             const pkgs = res.ok ? await res.json() : [];
             if (pkgs.length) {

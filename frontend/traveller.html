@@ -566,7 +566,7 @@ async function startPickup(pkgId) {
     if (btn) { btn.disabled = true; btn.textContent = 'Confirming…'; }
 
     try {
-        const res = await fetch(`${API}/pickup-package`, {
+        const res = await fetch(`${API}/confirm-pickup`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ package_id: pkgId, otp: otp }),
