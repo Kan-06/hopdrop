@@ -21,12 +21,12 @@ HopDrop is a crowd-powered smart parcel delivery prototype for the Mangaluru-Kar
 
 ## Architecture overview
 ```mermaid
-flowchart LR
-  U[Users] --> FE[Frontend (HTML CSS JS)]
-  FE -->|Same-origin fetch| API[Flask API]
-  API --> DATA[In-memory storage]
-  API --> WALLET[Wallet and OTP logic]
-  API --> STATIC[Static assets]
+graph LR
+    U[Users] --> FE[Frontend]
+    FE --> API[Flask API]
+    API --> DATA[In-memory storage]
+    API --> WALLET[Wallet and OTP logic]
+    API --> STATIC[Static assets]
 ```
 
 ## Workflow
