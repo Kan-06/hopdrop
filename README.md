@@ -1,5 +1,8 @@
 # HopDrop
 
+## Live Demo
+https://hopdrop-gbxk.onrender.com
+
 HopDrop is a crowd-powered smart parcel delivery prototype for the Mangaluru-Karkala corridor. It models how trusted travelers can carry packages along routes while senders and receivers verify handoffs with OTPs and proof photos.
 
 ## Why it matters
