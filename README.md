@@ -124,4 +124,5 @@ hopdrop/
 
 Licensed under the Apache License 2.0.
 
-© 2026 Kanishk Hegde. Please do not redistribute or present this project as your own work without attribution.
+© 2026 HopDrop Team. All rights reserved to the respective contributors.
+Please do not misrepresent this project or its contributors as your own work.
